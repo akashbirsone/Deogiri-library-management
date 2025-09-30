@@ -1,3 +1,76 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "book-1",
+      "description": "A classic novel cover",
+      "imageUrl": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxib29rJTIwY292ZXJ8ZW58MHx8fHwxNzU5MjAxNDI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "book cover"
+    },
+    {
+      "id": "book-2",
+      "description": "Science fiction book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzcGFjZSUyMHN0YXJzfGVufDB8fHx8MTc1OTE3MTkzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "space stars"
+    },
+    {
+      "id": "book-3",
+      "description": "Fantasy book cover with a dragon",
+      "imageUrl": "https://images.unsplash.com/photo-1610926597998-fc7f2c1b89b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwZHJhZ29ufGVufDB8fHx8MTc1OTE2Mzk3MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy dragon"
+    },
+    {
+      "id": "book-4",
+      "description": "Mystery novel cover with a magnifying glass",
+      "imageUrl": "https://images.unsplash.com/photo-1712730324696-f95697a14f97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxteXN0ZXJ5JTIwY2x1ZXxlbnwwfHx8fDE3NTkyNDM1OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mystery clue"
+    },
+    {
+      "id": "book-5",
+      "description": "A history book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1749989882242-77402fb6763e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxoaXN0b3J5JTIwc2Nyb2xsfGVufDB8fHx8MTc1OTI0MzU5Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "history scroll"
+    },
+    {
+      "id": "book-6",
+      "description": "A biography cover",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTkyMDk1OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "book-7",
+      "description": "A children's book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1702907155366-31d6c26a3938?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjYXJ0b29uJTIwYW5pbWFsfGVufDB8fHx8MTc1OTIyMTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon animal"
+    },
+    {
+      "id": "book-8",
+      "description": "A romance novel cover",
+      "imageUrl": "https://images.unsplash.com/photo-1738226699457-017e7e65dfb5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjb3VwbGUlMjBoZWFydHxlbnwwfHx8fDE3NTkyNDM1OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "couple heart"
+    },
+    {
+      "id": "book-9",
+      "description": "A thriller book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1464457312035-3d7d0e0c058e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkYXJrJTIwZm9yZXN0fGVufDB8fHx8MTc1OTI0MTIwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dark forest"
+    },
+    {
+      "id": "book-10",
+      "description": "A self-help book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1600872353502-ade08d7abec2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzdW5yaXNlJTIwcGF0aHxlbnwwfHx8fDE3NTkyNDM1OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sunrise path"
+    },
+    {
+      "id": "book-11",
+      "description": "A poetry book cover",
+      "imageUrl": "https://images.unsplash.com/photo-1702570913548-0bb3a1126bc7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxmZWF0aGVyJTIwcXVpbGx8ZW58MHx8fHwxNzU5MjQzNTk2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "feather quill"
+    },
+    {
+      "id": "book-12",
+      "description": "A cookbook cover",
+      "imageUrl": "https://images.unsplash.com/photo-1656711781745-ba68661d06b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxmb29kJTIwY29va2luZ3xlbnwwfHx8fDE3NTkxNDg0MTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "food cooking"
+    }
+  ]
 }
