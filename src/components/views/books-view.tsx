@@ -39,8 +39,8 @@ export function BooksView() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="w-full">
+            <div className="flex flex-col md:flex-row md:items-end gap-4">
+                <div className="w-full md:w-auto">
                     <p className="text-sm font-medium mb-2">Department</p>
                         <Select onValueChange={setDepartment} defaultValue="all">
                         <SelectTrigger className="w-full md:w-[240px]">
@@ -56,7 +56,7 @@ export function BooksView() {
                         </SelectContent>
                     </Select>
                 </div>
-                 <div className="w-full">
+                 <div className="w-full md:w-auto">
                     <p className="text-sm font-medium mb-2">Category</p>
                      <Select onValueChange={setCategory} defaultValue="all">
                         <SelectTrigger className="w-full md:w-[240px]">
