@@ -95,7 +95,6 @@ function PageContent() {
         className="border-sidebar-border transition-transform duration-300 ease-in-out"
       >
         <SidebarHeader className="flex items-center justify-between p-4">
-          <Logo />
            <Button
             variant="ghost"
             size="icon"
@@ -105,6 +104,7 @@ function PageContent() {
           >
             <X />
           </Button>
+          <Logo />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
