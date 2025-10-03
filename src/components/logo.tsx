@@ -7,7 +7,7 @@ export function Logo() {
         <Library className="h-5 w-5" />
       </div>
       <span className="font-headline text-lg md:text-xl font-semibold transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0">
-        Deogiri e-Granthalaya
+        Deogiri Library Management
       </span>
     </div>
   );
