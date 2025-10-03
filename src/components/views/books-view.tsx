@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -44,7 +45,7 @@ export function BooksView() {
                         <p className="text-sm font-medium mb-2">Department</p>
                          <Select onValueChange={setDepartment} defaultValue="all">
                             <SelectTrigger>
-                                <SelectValue placeholder="Select Department" />
+                                <SelectValue placeholder="Select Course" />
                             </SelectTrigger>
                             <SelectContent>
                                 {departments.map(dep => (
