@@ -7,23 +7,17 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Book } from "@/types";
 
 export function BooksView() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [category, setCategory] = React.useState("all");
-    const [availability, setAvailability] = React.useState("all");
 
     const filteredBooks = books.filter(book => {
         const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              book.isbn.includes(searchTerm);
+                              book.author.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = category === 'all' || book.category === category;
-        const matchesAvailability = availability === 'all' || 
-                                    (availability === 'available' && book.availableCopies > 0) ||
-                                    (availability === 'unavailable' && book.availableCopies === 0);
-        return matchesSearch && matchesCategory && matchesAvailability;
+        return matchesSearch && matchesCategory;
     });
     
     const categories = ['all', ...Array.from(new Set(books.map(b => b.category)))];
@@ -32,32 +26,25 @@ export function BooksView() {
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">Book Catalog</h1>
       <Card>
-        <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-                <Input 
-                    placeholder="Search by title, author, or ISBN..." 
-                    className="flex-grow"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-                 <Select value={availability} onValueChange={setAvailability}>
-                    <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Availability" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="unavailable">Unavailable</SelectItem>
-                    </SelectContent>
-                </Select>
+        <CardContent className="p-4 space-y-4">
+            <Input 
+                placeholder="Search books by title or author…" 
+                className="w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                    <Button 
+                        key={cat}
+                        variant={category === cat ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCategory(cat)}
+                        className="capitalize"
+                    >
+                        {cat}
+                    </Button>
+                ))}
             </div>
         </CardContent>
       </Card>
