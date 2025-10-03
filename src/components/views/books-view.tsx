@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Book } from "@/types";
 import { Separator } from "../ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function BooksView() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -38,37 +39,37 @@ export function BooksView() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <div>
-                <p className="text-sm font-medium mb-2">Categories</p>
-                <div className="flex flex-wrap gap-2">
-                    {categories.map(cat => (
-                        <Button 
-                            key={cat}
-                            variant={category === cat ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCategory(cat)}
-                            className="capitalize"
-                        >
-                            {cat}
-                        </Button>
-                    ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p className="text-sm font-medium mb-2">Categories</p>
+                    <div className="flex flex-wrap gap-2">
+                        {categories.map(cat => (
+                            <Button 
+                                key={cat}
+                                variant={category === cat ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCategory(cat)}
+                                className="capitalize"
+                            >
+                                {cat}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
-            </div>
-            <Separator />
-             <div>
-                <p className="text-sm font-medium mb-2">Departments</p>
-                <div className="flex flex-wrap gap-2">
-                    {departments.map(dep => (
-                        <Button 
-                            key={dep}
-                            variant={department === dep ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setDepartment(dep)}
-                            className="capitalize"
-                        >
-                            {dep}
-                        </Button>
-                    ))}
+                <div>
+                    <p className="text-sm font-medium mb-2">Department</p>
+                     <Select onValueChange={setDepartment} defaultValue="all">
+                        <SelectTrigger className="w-full md:w-[240px]">
+                            <SelectValue placeholder="Select Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {departments.map(dep => (
+                                <SelectItem key={dep} value={dep} className="capitalize">
+                                    {dep}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
         </CardContent>
