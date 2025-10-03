@@ -3,10 +3,7 @@
 import * as React from "react"
 import {
   Book,
-  Home,
   LayoutDashboard,
-  PanelLeft,
-  User,
   Users,
 } from "lucide-react"
 
@@ -21,7 +18,6 @@ import {
   SidebarProvider,
   SidebarFooter,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserNav } from "@/components/user-nav"
@@ -29,9 +25,8 @@ import { useApp } from "@/contexts/app-provider"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { BooksView } from "@/components/views/books-view"
 import { UsersView } from "@/components/views/users-view"
-import { ProfileView } from "@/components/views/profile-view"
 
-type View = "dashboard" | "books" | "users" | "profile"
+type View = "dashboard" | "books" | "users"
 
 export default function MainPage() {
   const { role } = useApp()
@@ -41,7 +36,6 @@ export default function MainPage() {
     { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { name: "books", label: "Book Catalog", icon: Book },
     { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
-    { name: "profile", label: "My Profile", icon: User, roles: ["student"] },
   ]
 
   const renderView = () => {
@@ -52,8 +46,6 @@ export default function MainPage() {
         return <BooksView />
       case "users":
         return <UsersView />
-      case "profile":
-        return <ProfileView />
       default:
         return <DashboardView />
     }
