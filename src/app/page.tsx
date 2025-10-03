@@ -9,6 +9,7 @@ import {
   History,
   Settings,
   HelpCircle,
+  LogOut,
 } from "lucide-react"
 
 import {
@@ -21,9 +22,10 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarFooter,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { UserNav } from "@/components/user-nav"
 import { useApp } from "@/contexts/app-provider"
 import { DashboardView } from "@/components/views/dashboard-view"
@@ -99,8 +101,19 @@ export default function MainPage() {
             )}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="items-center justify-center group-data-[collapsible=icon]:-ml-2">
-          <ThemeToggle />
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+                <ThemeToggle />
+            </SidebarMenuItem>
+             <SidebarSeparator />
+             <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Logout" disabled>
+                    <LogOut />
+                    <span>Logout</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
