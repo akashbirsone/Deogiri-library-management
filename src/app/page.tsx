@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -10,6 +11,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  X,
 } from "lucide-react"
 
 import {
@@ -24,6 +26,7 @@ import {
   SidebarFooter,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -36,11 +39,13 @@ import { MyBooksView } from "@/components/views/my-books-view"
 import { HistoryView } from "@/components/views/history-view"
 import { SettingsView } from "@/components/views/settings-view"
 import { HelpView } from "@/components/views/help-view"
+import { Button } from "@/components/ui/button"
 
 type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings" | "help";
 
-export default function MainPage() {
+function PageContent() {
   const { role } = useApp()
+  const { setOpenMobile } = useSidebar();
   const [activeView, setActiveView] = React.useState<View>("dashboard")
 
   const navigationItems = [
@@ -49,9 +54,17 @@ export default function MainPage() {
     { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
     { name: "history", label: "History", icon: History, roles: ["student"] },
     { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
+  ]
+  
+  const bottomNavigationItems = [
     { name: "settings", label: "Profile & Settings", icon: Settings },
     { name: "help", label: "Help & Support", icon: HelpCircle },
   ]
+
+  const handleViewChange = (view: View) => {
+    setActiveView(view);
+    setOpenMobile(false); // Close sidebar on mobile after selection
+  }
 
   const renderView = () => {
     switch (activeView) {
@@ -75,14 +88,23 @@ export default function MainPage() {
   }
 
   return (
-    <SidebarProvider>
+    <>
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="border-sidebar-border"
+        className="border-sidebar-border transition-transform duration-300 ease-in-out"
       >
-        <SidebarHeader>
+        <SidebarHeader className="relative">
           <Logo />
+           <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 right-4 text-sidebar-foreground/70 hover:text-sidebar-foreground md:hidden"
+            onClick={() => setOpenMobile(false)}
+            aria-label="Close sidebar"
+          >
+            <X />
+          </Button>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -90,7 +112,7 @@ export default function MainPage() {
               !item.roles || item.roles.includes(role) ? (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
-                    onClick={() => setActiveView(item.name as View)}
+                    onClick={() => handleViewChange(item.name as View)}
                     isActive={activeView === item.name}
                     tooltip={item.label}
                   >
@@ -104,10 +126,22 @@ export default function MainPage() {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
+             {bottomNavigationItems.map((item) => (
+                <SidebarMenuItem key={item.name}>
+                    <SidebarMenuButton
+                        onClick={() => handleViewChange(item.name as View)}
+                        isActive={activeView === item.name}
+                        tooltip={item.label}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
+            <SidebarSeparator />
             <SidebarMenuItem>
                 <ThemeToggle />
             </SidebarMenuItem>
-             <SidebarSeparator />
              <SidebarMenuItem>
                 <SidebarMenuButton tooltip="Logout" disabled>
                     <LogOut />
@@ -120,12 +154,20 @@ export default function MainPage() {
       <SidebarInset>
         <header className="flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
             <SidebarTrigger className="md:hidden" />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-1 items-center justify-end gap-4">
             <UserNav />
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">{renderView()}</main>
       </SidebarInset>
-    </SidebarProvider>
+    </>
   )
+}
+
+export default function MainPage() {
+    return (
+        <SidebarProvider>
+            <PageContent />
+        </SidebarProvider>
+    )
 }
