@@ -1,173 +1,69 @@
 
 "use client"
 
-import * as React from "react"
-import {
-  Book,
-  LayoutDashboard,
-  Users,
-  Library,
-  History,
-  Settings,
-  HelpCircle,
-  LogOut,
-  X,
-} from "lucide-react"
+import Link from "next/link";
+import { Book, Github } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-  SidebarFooter,
-  SidebarSeparator,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { UserNav } from "@/components/user-nav"
-import { useApp } from "@/contexts/app-provider"
-import { DashboardView } from "@/components/views/dashboard-view"
-import { BooksView } from "@/components/views/books-view"
-import { UsersView } from "@/components/views/users-view"
-import { MyBooksView } from "@/components/views/my-books-view"
-import { HistoryView } from "@/components/views/history-view"
-import { SettingsView } from "@/components/views/settings-view"
-import { HelpView } from "@/components/views/help-view"
-import { Button } from "@/components/ui/button"
-
-type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings" | "help";
-
-function PageContent() {
-  const { role } = useApp()
-  const { setOpenMobile } = useSidebar();
-  const [activeView, setActiveView] = React.useState<View>("dashboard")
-
-  const navigationItems = [
-    { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { name: "books", label: "Book Catalog", icon: Book },
-    { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
-    { name: "history", label: "History", icon: History, roles: ["student"] },
-    { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
-  ]
-  
-  const bottomNavigationItems = [
-    { name: "settings", label: "Profile & Settings", icon: Settings },
-    { name: "help", label: "Help & Support", icon: HelpCircle },
-  ]
-
-  const handleViewChange = (view: View) => {
-    setActiveView(view);
-    setOpenMobile(false); // Close sidebar on mobile after selection
-  }
-
-  const renderView = () => {
-    switch (activeView) {
-      case "dashboard":
-        return <DashboardView />
-      case "books":
-        return <BooksView />
-      case "users":
-        return <UsersView />
-      case "my-books":
-          return <MyBooksView />
-      case "history":
-          return <HistoryView />
-      case "settings":
-          return <SettingsView />
-      case "help":
-            return <HelpView />
-      default:
-        return <DashboardView />
-    }
-  }
-
+export default function LoginPage() {
   return (
-    <>
-      <Sidebar
-        variant="sidebar"
-        collapsible="icon"
-        className="border-sidebar-border transition-transform duration-300 ease-in-out"
-      >
-        <SidebarHeader className="flex items-center justify-between p-4 border-b">
-          <Logo />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-sidebar-foreground/70 hover:text-sidebar-foreground md:hidden"
-            onClick={() => setOpenMobile(false)}
-            aria-label="Close sidebar"
-          >
-            <X />
-          </Button>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navigationItems.map((item) =>
-              !item.roles || item.roles.includes(role) ? (
-                <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton
-                    onClick={() => handleViewChange(item.name as View)}
-                    isActive={activeView === item.name}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ) : null
-            )}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-             {bottomNavigationItems.map((item) => (
-                <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton
-                        onClick={() => handleViewChange(item.name as View)}
-                        isActive={activeView === item.name}
-                        tooltip={item.label}
-                    >
-                        <item.icon />
-                        <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            ))}
-            <SidebarSeparator />
-            <SidebarMenuItem>
-                <ThemeToggle />
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Logout" disabled>
-                    <LogOut />
-                    <span>Logout</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-            <SidebarTrigger className="md:hidden" />
-          <div className="flex flex-1 items-center justify-end gap-4">
-            <UserNav />
+    <div className="flex items-center justify-center min-h-screen bg-muted/50">
+      <Card className="mx-auto max-w-sm w-full">
+        <CardHeader className="text-center">
+          <div className="flex justify-center items-center mb-2">
+            <Book className="h-8 w-8 mr-2" />
+            <CardTitle className="text-2xl font-headline">Login to Library Management</CardTitle>
           </div>
-        </header>
-        <main className="flex-1 p-4 sm:p-6">{renderView()}</main>
-      </SidebarInset>
-    </>
+          <CardDescription>Enter your email below to login to your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" required />
+            </div>
+            <Link href="/dashboard" className="w-full">
+              <Button className="w-full">
+                Login
+              </Button>
+            </Link>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            <Button variant="outline" className="w-full">
+                <div className="flex items-center justify-center">
+                    <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.902,35.688,44,30.41,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                    </svg>
+                    Continue with Google
+                </div>
+            </Button>
+            <Button variant="outline" className="w-full">
+              <Github className="mr-2 h-4 w-4" />
+              Continue with GitHub
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
-}
-
-export default function MainPage() {
-    return (
-        <SidebarProvider>
-            <PageContent />
-        </SidebarProvider>
-    )
 }
