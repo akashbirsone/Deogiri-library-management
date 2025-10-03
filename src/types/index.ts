@@ -14,6 +14,7 @@ export interface Book {
   author: string;
   isbn: string;
   category: string;
+  department?: string;
   publicationYear: number;
   totalCopies: number;
   availableCopies: number;

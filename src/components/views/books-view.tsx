@@ -8,19 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Book } from "@/types";
+import { Separator } from "../ui/separator";
 
 export function BooksView() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [category, setCategory] = React.useState("all");
+    const [department, setDepartment] = React.useState("all");
 
     const filteredBooks = books.filter(book => {
         const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               book.author.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = category === 'all' || book.category === category;
-        return matchesSearch && matchesCategory;
+        const matchesDepartment = department === 'all' || book.department === department;
+        return matchesSearch && matchesCategory && matchesDepartment;
     });
     
     const categories = ['all', ...Array.from(new Set(books.map(b => b.category)))];
+    const departments = ['all', ...Array.from(new Set(books.map(b => b.department).filter(Boolean))) as string[]];
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,18 +38,38 @@ export function BooksView() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <div className="flex flex-wrap gap-2">
-                {categories.map(cat => (
-                    <Button 
-                        key={cat}
-                        variant={category === cat ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCategory(cat)}
-                        className="capitalize"
-                    >
-                        {cat}
-                    </Button>
-                ))}
+            <div>
+                <p className="text-sm font-medium mb-2">Categories</p>
+                <div className="flex flex-wrap gap-2">
+                    {categories.map(cat => (
+                        <Button 
+                            key={cat}
+                            variant={category === cat ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCategory(cat)}
+                            className="capitalize"
+                        >
+                            {cat}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+            <Separator />
+             <div>
+                <p className="text-sm font-medium mb-2">Departments</p>
+                <div className="flex flex-wrap gap-2">
+                    {departments.map(dep => (
+                        <Button 
+                            key={dep}
+                            variant={department === dep ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setDepartment(dep)}
+                            className="capitalize"
+                        >
+                            {dep}
+                        </Button>
+                    ))}
+                </div>
             </div>
         </CardContent>
       </Card>
@@ -84,7 +109,10 @@ function BookCard({ book }: { book: Book }) {
         </Badge>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
-        <Badge variant="outline" className="mb-2">{book.category}</Badge>
+        <div className="flex flex-wrap gap-1 mb-2">
+            <Badge variant="outline">{book.category}</Badge>
+            {book.department && <Badge variant="outline">{book.department}</Badge>}
+        </div>
         <CardTitle className="font-headline text-lg mb-1 leading-tight">{book.title}</CardTitle>
         <p className="text-sm text-muted-foreground">{book.author}</p>
         <p className="text-xs text-muted-foreground mt-2">ISBN: {book.isbn}</p>
