@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,11 +12,12 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { students } from "@/lib/data"
 import { Separator } from "@/components/ui/separator"
-import { BookCheck, BookCopy, IndianRupee } from "lucide-react"
+import { BookCheck, BookCopy, IndianRupee, Camera } from "lucide-react"
 
 export function SettingsView() {
   const { user } = useApp()
   const { toast } = useToast()
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Find the detailed student data
   const studentData = students.find(s => s.id === user.id);
@@ -35,6 +37,21 @@ export function SettingsView() {
         description: "Your password has been changed successfully.",
     });
   }
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      // In a real app, you would upload the file and update the user's avatar URL.
+      // Here, we just show a toast notification.
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your new profile picture has been uploaded.",
+      });
+    }
+  }
   
   const booksIssued = studentData?.borrowHistory.filter(b => !b.returnDate).length ?? 0;
   const booksReturned = studentData?.borrowHistory.filter(b => b.returnDate).length ?? 0;
@@ -47,10 +64,28 @@ export function SettingsView() {
         <div className="lg:col-span-1 flex flex-col gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative w-16 h-16">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                      </Avatar>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="absolute -bottom-1 -right-1 rounded-full h-7 w-7 bg-background"
+                        onClick={handleAvatarClick}
+                      >
+                        <Camera className="h-4 w-4" />
+                        <span className="sr-only">Change profile picture</span>
+                      </Button>
+                      <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange}
+                        className="hidden" 
+                        accept="image/*"
+                      />
+                    </div>
                     <div>
                         <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
                         <CardDescription>
