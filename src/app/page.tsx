@@ -94,8 +94,9 @@ function PageContent() {
         collapsible="icon"
         className="border-sidebar-border transition-transform duration-300 ease-in-out"
       >
-        <SidebarHeader className="flex items-center gap-4 p-4">
-           <Button
+        <SidebarHeader className="flex items-center justify-between p-4 border-b">
+          <Logo />
+          <Button
             variant="ghost"
             size="icon"
             className="text-sidebar-foreground/70 hover:text-sidebar-foreground md:hidden"
@@ -104,7 +105,6 @@ function PageContent() {
           >
             <X />
           </Button>
-          <Logo />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
