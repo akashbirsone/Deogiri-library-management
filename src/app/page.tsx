@@ -23,6 +23,7 @@ import {
   SidebarProvider,
   SidebarFooter,
   SidebarSeparator,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -117,8 +118,11 @@ export default function MainPage() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-end gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-          <UserNav />
+        <header className="flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+            <SidebarTrigger className="md:hidden" />
+          <div className="flex items-center gap-4">
+            <UserNav />
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">{renderView()}</main>
       </SidebarInset>
