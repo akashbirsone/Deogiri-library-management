@@ -94,12 +94,12 @@ function PageContent() {
         collapsible="icon"
         className="border-sidebar-border transition-transform duration-300 ease-in-out"
       >
-        <SidebarHeader className="relative">
+        <SidebarHeader className="relative flex items-center justify-between">
           <Logo />
            <Button
             variant="ghost"
             size="icon"
-            className="absolute top-3 right-4 text-sidebar-foreground/70 hover:text-sidebar-foreground md:hidden"
+            className="text-sidebar-foreground/70 hover:text-sidebar-foreground md:hidden"
             onClick={() => setOpenMobile(false)}
             aria-label="Close sidebar"
           >
