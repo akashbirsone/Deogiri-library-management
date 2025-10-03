@@ -7,6 +7,7 @@ import {
   Users,
   Library,
   History,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -29,8 +30,9 @@ import { BooksView } from "@/components/views/books-view"
 import { UsersView } from "@/components/views/users-view"
 import { MyBooksView } from "@/components/views/my-books-view"
 import { HistoryView } from "@/components/views/history-view"
+import { SettingsView } from "@/components/views/settings-view"
 
-type View = "dashboard" | "books" | "users" | "my-books" | "history"
+type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings";
 
 export default function MainPage() {
   const { role } = useApp()
@@ -42,6 +44,7 @@ export default function MainPage() {
     { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
     { name: "history", label: "History", icon: History, roles: ["student"] },
     { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
+    { name: "settings", label: "Profile & Settings", icon: Settings },
   ]
 
   const renderView = () => {
@@ -56,6 +59,8 @@ export default function MainPage() {
           return <MyBooksView />
       case "history":
           return <HistoryView />
+      case "settings":
+          return <SettingsView />
       default:
         return <DashboardView />
     }
