@@ -60,8 +60,33 @@ export function SettingsView() {
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">Profile & Settings</h1>
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column: Profile & Stats */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="lg:col-span-2 order-2 lg:order-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline">Account Settings</CardTitle>
+                <CardDescription>Update your account password. For other changes, please contact the admin.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-6 max-w-md" onSubmit={handlePasswordChange}>
+                    <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input id="current-password" type="password" placeholder="••••••••" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input id="new-password" type="password" placeholder="••••••••" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input id="confirm-password" type="password" placeholder="••••••••" />
+                    </div>
+                    <Button type="submit">Change Password</Button>
+                </form>
+              </CardContent>
+            </Card>
+        </div>
+
+        <div className="lg:col-span-1 flex flex-col gap-6 order-1 lg:order-2">
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                     <div className="relative w-16 h-16">
@@ -136,31 +161,6 @@ export function SettingsView() {
                 </CardContent>
              </Card>
         </div>
-
-        {/* Right Column: Settings */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline">Account Settings</CardTitle>
-            <CardDescription>Update your account password. For other changes, please contact the admin.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-6 max-w-md" onSubmit={handlePasswordChange}>
-                <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" placeholder="••••••••" />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" placeholder="••••••••" />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" placeholder="••••••••" />
-                </div>
-                <Button type="submit">Change Password</Button>
-            </form>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
