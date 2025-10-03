@@ -94,7 +94,7 @@ function PageContent() {
         collapsible="icon"
         className="border-sidebar-border transition-transform duration-300 ease-in-out"
       >
-        <SidebarHeader className="flex items-center justify-between p-4">
+        <SidebarHeader className="flex items-center gap-4 p-4">
            <Button
             variant="ghost"
             size="icon"
