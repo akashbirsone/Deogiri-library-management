@@ -40,31 +40,31 @@ export function BooksView() {
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-end">
-                     <div className="w-full md:w-[240px]">
-                        <p className="text-sm font-medium mb-2">Department</p>
-                         <Select onValueChange={setDepartment} defaultValue="all">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Course" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {departments.map(dep => (
-                                    <SelectItem key={dep} value={dep} className="capitalize">
-                                        {dep}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="w-full">
+                    <p className="text-sm font-medium mb-2">Department</p>
+                        <Select onValueChange={setDepartment} defaultValue="all">
+                        <SelectTrigger className="w-full md:w-[240px]">
+                            <SelectValue placeholder="Select Course" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Courses</SelectItem>
+                            {departments.filter(d => d !== 'all').map(dep => (
+                                <SelectItem key={dep} value={dep} className="capitalize">
+                                    {dep}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
-                 <div>
+                 <div className="w-full">
                     <p className="text-sm font-medium mb-2">Category</p>
                      <Select onValueChange={setCategory} defaultValue="all">
                         <SelectTrigger className="w-full md:w-[240px]">
                             <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                         <SelectContent>
-                            {categories.map(cat => (
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categories.filter(c => c !== 'all').map(cat => (
                                 <SelectItem key={cat} value={cat} className="capitalize">
                                     {cat}
                                 </SelectItem>
