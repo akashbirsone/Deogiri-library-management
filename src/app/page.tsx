@@ -5,6 +5,8 @@ import {
   Book,
   LayoutDashboard,
   Users,
+  Library,
+  History,
 } from "lucide-react"
 
 import {
@@ -25,8 +27,10 @@ import { useApp } from "@/contexts/app-provider"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { BooksView } from "@/components/views/books-view"
 import { UsersView } from "@/components/views/users-view"
+import { MyBooksView } from "@/components/views/my-books-view"
+import { HistoryView } from "@/components/views/history-view"
 
-type View = "dashboard" | "books" | "users"
+type View = "dashboard" | "books" | "users" | "my-books" | "history"
 
 export default function MainPage() {
   const { role } = useApp()
@@ -35,6 +39,8 @@ export default function MainPage() {
   const navigationItems = [
     { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { name: "books", label: "Book Catalog", icon: Book },
+    { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
+    { name: "history", label: "History", icon: History, roles: ["student"] },
     { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
   ]
 
@@ -46,6 +52,10 @@ export default function MainPage() {
         return <BooksView />
       case "users":
         return <UsersView />
+      case "my-books":
+          return <MyBooksView />
+      case "history":
+          return <HistoryView />
       default:
         return <DashboardView />
     }
