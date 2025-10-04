@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
 import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -110,6 +111,11 @@ const LibrarianDashboard = () => {
     const borrowedBooks = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
     const availableBooks = totalBooks - borrowedBooks;
     const lowStockBooks = books.filter(book => book.availableCopies <= 2 && book.availableCopies > 0).length;
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     return (
     <div className="flex flex-col gap-6">
@@ -176,7 +182,7 @@ const LibrarianDashboard = () => {
                                 <TableRow key={`${student.id}-${history.bookId}`}>
                                     <TableCell>{book?.title}</TableCell>
                                     <TableCell>{student.name}</TableCell>
-                                    <TableCell>{format(new Date(history.dueDate), "PPP")}</TableCell>
+                                    <TableCell>{isClient ? format(new Date(history.dueDate), "PPP") : ''}</TableCell>
                                 </TableRow>
                             )
                         })}
