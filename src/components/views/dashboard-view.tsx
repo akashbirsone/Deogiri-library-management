@@ -197,6 +197,11 @@ const LibrarianDashboard = () => {
 const StudentDashboard = () => {
   const { user } = useApp();
   const studentData = students.find((s) => s.id === user.id);
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const getInitials = (name: string) => {
     const names = name.split(" ");
