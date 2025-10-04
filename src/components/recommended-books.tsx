@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -8,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Book, Sparkles } from "lucide-react"
+import { Book, Sparkles, AlertCircle } from "lucide-react"
 import { useApp } from "@/contexts/app-provider"
 import { students, books } from "@/lib/data"
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/ai/flows/book-recommendation-flow"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "./ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function RecommendedBooks() {
   const { user } = useApp()
@@ -24,6 +26,7 @@ export function RecommendedBooks() {
   const [recommendations, setRecommendations] =
     React.useState<BookRecommendationOutput | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [apiError, setApiError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const fetchRecommendations = async () => {
@@ -34,6 +37,7 @@ export function RecommendedBooks() {
       }
 
       setLoading(true)
+      setApiError(null);
       try {
         const history = studentData.borrowHistory.map((item) => {
           const book = books.find((b) => b.id === item.bookId)
@@ -54,13 +58,17 @@ export function RecommendedBooks() {
           borrowHistory: history,
         })
         setRecommendations(result)
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to get book recommendations:", error)
-        toast({
-            variant: "destructive",
-            title: "AI Error",
-            description: "Could not fetch book recommendations.",
-        })
+        if (error.message && error.message.includes("SERVICE_DISABLED")) {
+            setApiError("The Generative AI service is not enabled for your project. Please enable it in your Google Cloud console and try again.");
+        } else {
+            toast({
+                variant: "destructive",
+                title: "AI Error",
+                description: "Could not fetch book recommendations.",
+            })
+        }
       } finally {
         setLoading(false)
       }
@@ -93,6 +101,14 @@ export function RecommendedBooks() {
                 <RecommendationSkeleton />
                 <RecommendationSkeleton />
             </div>
+        ) : apiError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Configuration Required</AlertTitle>
+            <AlertDescription>
+              {apiError}
+            </AlertDescription>
+          </Alert>
         ) : !recommendations || recommendations.recommendedBooks.length === 0 || recommendations.recommendedBooks[0].reason === "Not enough history" ? (
           <div className="text-center text-muted-foreground py-8">
             <Book className="mx-auto h-12 w-12 mb-4" />
