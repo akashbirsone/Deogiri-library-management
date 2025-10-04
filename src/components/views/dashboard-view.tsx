@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useApp } from "@/contexts/app-provider";
@@ -152,7 +153,7 @@ const LibrarianDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{lowStockBooks}</div>
             <p className="text-xs text-muted-foreground">Titles with &lt;= 2 copies</p>
-          </C</CardContent>
+          </CardContent>
         </Card>
       </div>
        <Card>
