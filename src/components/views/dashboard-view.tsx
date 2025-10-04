@@ -5,7 +5,6 @@ import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History } from "
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { books, students } from "@/lib/data";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { RecommendedBooks } from "../recommended-books";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -153,7 +152,7 @@ const LibrarianDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{lowStockBooks}</div>
             <p className="text-xs text-muted-foreground">Titles with &lt;= 2 copies</p>
-          </CardContent>
+          </C</CardContent>
         </Card>
       </div>
        <Card>
@@ -256,7 +255,14 @@ const StudentDashboard = () => {
             </Card>
         </div>
         <div className="space-y-6">
-             <RecommendedBooks />
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Announcements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">No new announcements.</p>
+                </CardContent>
+             </Card>
         </div>
       </div>
     </div>
