@@ -3,7 +3,7 @@ export type Role = "admin" | "librarian" | "student";
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   role: Role;
   avatar: string;
 }
@@ -31,6 +31,10 @@ export interface BorrowHistoryItem {
 
 export interface Student extends User {
   role: "student";
+  department: string;
+  course: string;
+  contactNumber: string;
+  yearOfStudy: string;
   borrowHistory: BorrowHistoryItem[];
   fines: number;
 }
