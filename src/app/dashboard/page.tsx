@@ -44,7 +44,7 @@ import { Button } from "@/components/ui/button"
 type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings" | "help";
 
 function PageContent() {
-  const { role } = useApp()
+  const { role, logout } = useApp()
   const { setOpenMobile } = useSidebar();
   const [activeView, setActiveView] = React.useState<View>("dashboard")
 
@@ -143,7 +143,7 @@ function PageContent() {
                 <ThemeToggle />
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Logout" disabled>
+                <SidebarMenuButton tooltip="Logout" onClick={logout}>
                     <LogOut />
                     <span>Logout</span>
                 </SidebarMenuButton>

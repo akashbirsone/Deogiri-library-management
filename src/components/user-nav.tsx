@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,7 +16,7 @@ import { useApp } from "@/contexts/app-provider"
 import { RoleSwitcher } from "./role-switcher"
 
 export function UserNav() {
-  const { user } = useApp()
+  const { user, logout } = useApp()
 
   if (!user) {
     return null
@@ -53,7 +54,7 @@ export function UserNav() {
           <RoleSwitcher />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={logout}>
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
