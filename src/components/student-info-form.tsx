@@ -70,7 +70,6 @@ export function StudentInfoForm() {
             contactNumber: values.contactNumber,
             yearOfStudy: values.yearOfStudy,
             fines: 0,
-            borrowHistory: []
         }
 
         const studentDocRef = doc(firestore, "students", authUser.uid);
