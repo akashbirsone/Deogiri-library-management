@@ -50,6 +50,10 @@ export function StudentInfoForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: authUser?.displayName || "",
+      department: "",
+      course: "",
+      contactNumber: "",
+      yearOfStudy: "",
     },
   });
 
@@ -71,8 +75,7 @@ export function StudentInfoForm() {
             yearOfStudy: values.yearOfStudy,
             fines: 0,
             borrowHistory: []
-
-        }
+        };
 
         const studentDocRef = doc(firestore, "students", authUser.uid);
         await setDoc(studentDocRef, studentProfileData);
@@ -130,7 +133,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your department" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {Object.keys(departments).map(dep => (
