@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -64,18 +63,19 @@ export function StudentInfoForm() {
             name: values.fullName,
             email: authUser.email,
             role: "student" as const,
-            avatar: authUser.photoURL || `https://i.pravatar.cc/150?u=${authUser.uid}`,
+            avatar: authUser.photoURL || 'https://i.pravatar.cc/150?u=${authUser.uid}', // <-- COMMA REMOVED HERE
             department: values.department,
             course: values.course,
             contactNumber: values.contactNumber,
             yearOfStudy: values.yearOfStudy,
             fines: 0,
+
         }
 
         const studentDocRef = doc(firestore, "students", authUser.uid);
         await setDoc(studentDocRef, studentProfileData);
         
-        setStudentProfile(studentProfileData);
+        
 
         toast({
             title: "Profile Saved!",
@@ -128,7 +128,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your department" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {Object.keys(departments).map(dep => (
@@ -151,7 +151,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your course" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {selectedDepartment && departments[selectedDepartment as keyof typeof departments].map(course => (
@@ -188,7 +188,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your year of study" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="1st">1st Year</SelectItem>
