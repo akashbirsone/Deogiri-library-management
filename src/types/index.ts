@@ -33,6 +33,7 @@ export interface BorrowHistoryItem {
 
 export interface Student extends User {
   role: "student";
+  studentId: string;
   department: string;
   course: string;
   contactNumber: string;

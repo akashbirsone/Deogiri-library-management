@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "student": {
@@ -8,6 +9,10 @@
         "id": {
           "type": "string",
           "description": "The unique identifier for the student, same as their auth UID."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "The formatted student ID, e.g., 2526123456."
         },
         "name": {
           "type": "string",
@@ -49,7 +54,7 @@
           "description": "The total amount of outstanding fines in INR."
         }
       },
-      "required": ["id", "name", "email", "role", "department", "course", "contactNumber", "yearOfStudy"]
+      "required": ["id", "studentId", "name", "email", "role", "department", "course", "contactNumber", "yearOfStudy"]
     }
   },
   "auth": {

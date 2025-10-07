@@ -63,8 +63,10 @@ export function StudentInfoForm() {
     if (!authUser || !firestore) return;
 
     try {
+        const studentId = `2526${Math.floor(100000 + Math.random() * 900000)}`;
         const studentProfileData = {
             id: authUser.uid,
+            studentId: studentId,
             name: values.fullName,
             email: authUser.email,
             role: "student" as const,

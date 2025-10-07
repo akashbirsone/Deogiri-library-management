@@ -138,7 +138,7 @@ export function SettingsView() {
                     <div>
                         <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
                         <CardDescription>
-                            Student ID: {user.id}
+                            Student ID: {studentProfile.studentId}
                         </CardDescription>
                     </div>
                 </CardHeader>

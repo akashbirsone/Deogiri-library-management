@@ -46,6 +46,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // Default user object for when no one is logged in.
 const defaultStudent: Student = {
     id: 'default',
+    studentId: '',
     name: "Guest",
     email: "",
     role: "student",
