@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -79,13 +78,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (firebaseLoading || !auth) return;
+    // FIX 1: Ensure auth and firestore are available before proceeding.
+    if (firebaseLoading || !auth || !firestore) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
         setAuthLoading(true);
         if (user) {
             setAuthUser(user);
-            const studentDocRef = doc(firestore!, "students", user.uid);
+            // FIX 2: firestore is now definitely available due to the check above
+            const studentDocRef = doc(firestore, "students", user.uid); 
             const studentDoc = await getDoc(studentDocRef);
 
             if (studentDoc.exists()) {
@@ -103,8 +104,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthLoading(false);
     });
 
+    // Dependencies must include firestore now, so auth state changes only trigger
+    // if firestore is ready.
     return () => unsubscribe();
-  }, [auth, firestore, firebaseLoading]);
+  }, [auth, firestore, firebaseLoading]); // <-- firestore added here
 
   const setRole = (newRole: Role) => {
     setRoleState(newRole);
