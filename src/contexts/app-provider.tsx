@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -57,57 +58,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [firebaseLoading, setFirebaseLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
   
   const { toast } = useToast();
 
   useEffect(() => {
-    const { app, firestore: fs, auth: au } = initializeFirebase();
+    const { firestore: fs, auth: au } = initializeFirebase();
     setFirestore(fs);
 
+    // This sets the session persistence type. By doing this once when the app loads,
+    // we ensure that Firebase knows to keep the user signed in across browser sessions.
     setPersistence(au, browserLocalPersistence)
-        .then(() => {
-            setAuth(au);
-        })
-        .catch((error) => {
-            console.error("Error setting auth persistence:", error);
-        })
-        .finally(() => {
-            setFirebaseLoading(false);
-        });
-  }, []);
-
-  useEffect(() => {
-    // FIX 1: Ensure auth and firestore are available before proceeding.
-    if (firebaseLoading || !auth || !firestore) return;
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setAuthLoading(true);
-        if (user) {
+      .then(() => {
+        // After persistence is set, we can safely set up the auth state listener.
+        // This avoids race conditions and internal Firebase errors.
+        setAuth(au);
+        const unsubscribe = onAuthStateChanged(au, async (user) => {
+          if (user) {
             setAuthUser(user);
-            // FIX 2: firestore is now definitely available due to the check above
-            const studentDocRef = doc(firestore, "students", user.uid); 
+            const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
             if (studentDoc.exists()) {
-                const profile = studentDoc.data() as Student;
-                setStudentProfile(profile);
-                setRoleState(profile.role);
+              const profile = studentDoc.data() as Student;
+              setStudentProfile(profile);
+              setRoleState(profile.role);
             } else {
-                setStudentProfile(null);
+              setStudentProfile(null);
             }
-        } else {
+          } else {
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
-        }
-        setAuthLoading(false);
-    });
-
-    // Dependencies must include firestore now, so auth state changes only trigger
-    // if firestore is ready.
-    return () => unsubscribe();
-  }, [auth, firestore, firebaseLoading]); // <-- firestore added here
+          }
+          setFirebaseLoading(false);
+        });
+        return () => unsubscribe();
+      })
+      .catch((error) => {
+        console.error("Error setting auth persistence:", error);
+        setFirebaseLoading(false);
+      });
+  }, []);
 
   const setRole = (newRole: Role) => {
     setRoleState(newRole);
@@ -117,9 +108,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
+      console.log("Attempting Google Sign-In...");
+      await signInWithPopup(auth, provider);
+      console.log("Google Sign-In Successful.");
     } catch (error: any) {
-        toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
+      console.error("Google Sign-In Failed:", error);
+      toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
     }
   };
 
@@ -127,9 +121,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     const provider = new GithubAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
+      console.log("Attempting GitHub Sign-In...");
+      await signInWithPopup(auth, provider);
+      console.log("GitHub Sign-In Successful.");
     } catch (error: any) {
-        toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
+      console.error("GitHub Sign-In Failed:", error);
+      toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
     }
   };
 
@@ -140,10 +137,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     if (!auth) return;
+    console.log("Logging out...");
     await auth.signOut();
+    console.log("Logout successful.");
   }
   
-  const loading = firebaseLoading || authLoading;
+  const loading = firebaseLoading;
 
   return (
     <AppContext.Provider value={{
@@ -160,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         emailLogin,
         logout
     }}>
-      {!loading && children}
+      {children}
     </AppContext.Provider>
   );
 }
