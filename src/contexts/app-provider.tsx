@@ -19,7 +19,7 @@ import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { books as initialBooks } from "@/lib/data";
-import { add, formatISO } from "date-fns";
+import { add, format, formatISO } from "date-fns";
 
 interface AppContextType {
   role: Role;
@@ -241,5 +241,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
