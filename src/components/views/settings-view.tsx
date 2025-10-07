@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Separator } from "@/components/ui/separator"
-import { BookCheck, BookCopy, IndianRupee, Camera } from "lucide-react"
+import { BookCheck, BookCopy, IndianRupee, Camera, User, Mail, Phone, GraduationCap } from "lucide-react"
 
 export function SettingsView() {
   const { user, studentProfile } = useApp()
@@ -25,14 +25,6 @@ export function SettingsView() {
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-  }
-
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-        title: "Password Updated",
-        description: "Your password has been changed successfully.",
-    });
   }
 
   const handleAvatarClick = () => {
@@ -64,25 +56,56 @@ export function SettingsView() {
         <div className="lg:col-span-2 order-2 lg:order-1">
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline">Account Settings</CardTitle>
-                <CardDescription>Update your account password. For other changes, please contact the admin.</CardDescription>
+                <CardTitle className="font-headline">Your Information</CardTitle>
+                <CardDescription>This is the information stored in your student profile.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <form className="space-y-6 max-w-md" onSubmit={handlePasswordChange}>
-                    <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <Input id="current-password" type="password" placeholder="••••••••" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <Input id="new-password" type="password" placeholder="••••••••" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input id="confirm-password" type="password" placeholder="••••••••" />
-                    </div>
-                    <Button type="submit">Change Password</Button>
-                </form>
+              <CardContent className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-start gap-3">
+                      <User className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Full Name</p>
+                          <p className="font-medium">{studentProfile.name}</p>
+                      </div>
+                  </div>
+                   <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Email Address</p>
+                          <p className="font-medium">{studentProfile.email}</p>
+                      </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                      <GraduationCap className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Department</p>
+                          <p className="font-medium">{studentProfile.department}</p>
+                      </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                      <GraduationCap className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Course</p>
+                          <p className="font-medium">{studentProfile.course}</p>
+                      </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                      <GraduationCap className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Year of Study</p>
+                          <p className="font-medium">{studentProfile.yearOfStudy}</p>
+                      </div>
+                  </div>
+                   <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-muted-foreground mt-1" />
+                      <div>
+                          <p className="text-muted-foreground">Contact Number</p>
+                          <p className="font-medium">{studentProfile.contactNumber}</p>
+                      </div>
+                  </div>
+                </div>
+                <Separator/>
+                <p className="text-xs text-muted-foreground">If any of this information is incorrect, please contact the library administration to get it updated.</p>
               </CardContent>
             </Card>
         </div>
@@ -115,15 +138,11 @@ export function SettingsView() {
                     <div>
                         <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
                         <CardDescription>
-                            {studentProfile?.department ? `${studentProfile.department} | ` : ''} Student ID: {user.id}
+                            Student ID: {user.id}
                         </CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <div>
-                        <Label>Email Address</Label>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                     </div>
                      <div>
                         <Label>Membership Status</Label>
                         <div><Badge variant="secondary">Active</Badge></div>
