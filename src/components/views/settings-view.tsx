@@ -125,7 +125,7 @@ export function SettingsView() {
                      </div>
                      <div>
                         <Label>Membership Status</Label>
-                        <p><Badge variant="secondary">Active</Badge></p>
+                        <div><Badge variant="secondary">Active</Badge></div>
                      </div>
                 </CardContent>
             </Card>
