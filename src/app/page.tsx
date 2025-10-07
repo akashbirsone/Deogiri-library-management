@@ -26,7 +26,10 @@ export default function Page() {
     
     // If the user is logged out, they should be on the login page.
     if (!authUser) {
-      router.replace('/');
+      // No explicit router.replace('/') is needed here, because the component's
+      // render logic below will render the LoginPage. This prevents a flash
+      // of the "Redirecting..." message on initial load for logged-out users.
+      return;
     }
     
     // If the user is authenticated but does NOT have a profile, they should stay on this page

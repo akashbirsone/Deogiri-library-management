@@ -149,10 +149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     try {
       await auth.signOut();
-      setAuthUser(null);
-      setStudentProfile(null);
-      setRoleState('student');
-      console.log("Logout successful.");
+      // The onAuthStateChanged listener will handle setting user state to null.
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch(error: any) {
        console.error("Logout failed:", error);
