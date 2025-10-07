@@ -1,7 +1,9 @@
-"use client"
 
+"use client";
+
+import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { books, students } from "@/lib/data";
+import { books } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +11,18 @@ import { format } from "date-fns";
 import { History } from "lucide-react";
 
 export function HistoryView() {
-    const { user } = useApp();
-    const studentData = students.find((s) => s.id === user.id);
+    const { studentProfile } = useApp();
+    const [isClient, setIsClient] = React.useState(false);
 
-    if (!studentData) {
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!studentProfile) {
         return <div>Student data not found.</div>;
     }
+    
+    const sortedHistory = [...studentProfile.borrowHistory].sort((a,b) => new Date(b.borrowDate).getTime() - new Date(a.borrowDate).getTime());
 
     return (
         <div className="flex flex-col gap-6">
@@ -25,27 +33,31 @@ export function HistoryView() {
                         <History />
                         Complete Log
                     </CardTitle>
-                    <CardDescription>A complete log of all books you've previously issued and returned.</CardDescription>
+                    <CardDescription>A complete log of all books you've issued and returned.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {studentData.borrowHistory.length > 0 ? (
+                    {sortedHistory.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Book Title</TableHead>
-                                    <TableHead>Borrowed</TableHead>
-                                    <TableHead>Returned</TableHead>
+                                    <TableHead>Issue Date</TableHead>
+                                    <TableHead>Return Date</TableHead>
+                                    <TableHead className="text-right">Fine</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {studentData.borrowHistory.map(item => {
+                                {sortedHistory.map((item, index) => {
                                     const book = books.find(b => b.id === item.bookId);
                                     return (
-                                        <TableRow key={item.bookId + item.borrowDate}>
+                                        <TableRow key={`${item.bookId}-${index}`}>
                                             <TableCell className="font-medium">{book?.title || 'Unknown Book'}</TableCell>
-                                            <TableCell>{format(new Date(item.borrowDate), 'PP')}</TableCell>
+                                            <TableCell>{isClient ? format(new Date(item.borrowDate), 'PP') : ''}</TableCell>
                                             <TableCell>
-                                                {item.returnDate ? format(new Date(item.returnDate), 'PP') : <Badge variant="outline">On Loan</Badge>}
+                                                {item.returnDate ? (isClient ? format(new Date(item.returnDate), 'PP') : '') : <Badge variant="outline">On Loan</Badge>}
+                                            </TableCell>
+                                            <TableCell className="text-right font-medium">
+                                                {item.fine && item.fine > 0 ? `₹${item.fine}`: '-'}
                                             </TableCell>
                                         </TableRow>
                                     )

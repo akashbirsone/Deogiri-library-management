@@ -1,19 +1,26 @@
-"use client"
 
+"use client";
+
+import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { books, students } from "@/lib/data";
+import { books } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Library } from "lucide-react";
+import { Library, RefreshCw } from "lucide-react";
 
 export function MyBooksView() {
-    const { user } = useApp();
-    const studentData = students.find((s) => s.id === user.id);
-    const currentlyBorrowed = studentData?.borrowHistory.filter((item) => !item.returnDate) || [];
+    const { studentProfile, returnBook } = useApp();
+    const currentlyBorrowed = studentProfile?.borrowHistory.filter((item) => !item.returnDate) || [];
+    const [isClient, setIsClient] = React.useState(false);
 
-    if (!studentData) {
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!studentProfile) {
         return <div>Student data not found.</div>;
     }
 
@@ -37,6 +44,7 @@ export function MyBooksView() {
                                     <TableHead>Issue Date</TableHead>
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -47,12 +55,18 @@ export function MyBooksView() {
                                     return (
                                         <TableRow key={item.bookId}>
                                             <TableCell className="font-medium">{book.title}</TableCell>
-                                            <TableCell>{format(new Date(item.borrowDate), "PP")}</TableCell>
-                                            <TableCell>{format(new Date(item.dueDate), "PP")}</TableCell>
+                                            <TableCell>{isClient ? format(new Date(item.borrowDate), "PP") : ''}</TableCell>
+                                            <TableCell>{isClient ? format(new Date(item.dueDate), "PP") : ''}</TableCell>
                                             <TableCell>
                                                 <Badge variant={isOverdue ? 'destructive' : 'secondary'}>
                                                     {isOverdue ? 'Overdue' : 'On Loan'}
                                                 </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button size="sm" onClick={() => returnBook(book.id)}>
+                                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                                    Return Book
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );

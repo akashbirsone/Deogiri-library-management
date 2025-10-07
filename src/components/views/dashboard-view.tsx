@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History } from "lucide-react";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { books, students } from "@/lib/data";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -40,6 +40,7 @@ const AdminDashboard = () => {
     }, []);
 
     const getInitials = (name: string) => {
+        if (!name) return "";
         const names = name.split(" ")
         return names.map((n) => n[0]).join("").toUpperCase();
     }
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fines Collected</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Fines</CardTitle>
             <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -275,88 +276,108 @@ const LibrarianDashboard = () => {
 };
 
 const StudentDashboard = () => {
-  const { user } = useApp();
-  const studentData = students.find((s) => s.id === user.id);
+  const { user, studentProfile } = useApp();
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
   
-  const getInitials = (name: string) => {
-    const names = name.split(" ");
-    return names.map((n) => n[0]).join("").toUpperCase();
-  };
-
-  if (!studentData) {
-    return <div>Student data not found.</div>;
+  if (!studentProfile) {
+    return <div>Loading student data...</div>;
   }
 
-  const currentlyBorrowedCount = studentData?.borrowHistory.filter((item) => !item.returnDate).length || 0;
-  const overdueBooksCount = studentData?.borrowHistory.filter(item => !item.returnDate && new Date(item.dueDate) < new Date()).length || 0;
-
+  const currentlyBorrowed = studentProfile.borrowHistory.filter((item) => !item.returnDate) || [];
+  const upcomingReturns = currentlyBorrowed
+    .map(item => ({...item, book: books.find(b => b.id === item.bookId)}))
+    .filter(item => item.book)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   return (
     <div className="flex flex-col gap-6">
        <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
-      <div className="grid gap-6 md:grid-cols-2">
-        
-        <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Books on Loan</CardTitle>
-                        <Library className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{currentlyBorrowedCount}</div>
-                        <p className="text-xs text-muted-foreground">Currently borrowed books</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue Books</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{overdueBooksCount}</div>
-                        <p className="text-xs text-muted-foreground">Books past their due date</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Welcome, {user.name}</CardTitle>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Books on Loan</CardTitle>
+                    <Library className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4 text-center">
-                    <Avatar className="h-24 w-24">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <p className="text-sm text-muted-foreground">ID: {user.id}</p>
-                        <Badge variant="outline" className="mt-2">Active Member</Badge>
-                    </div>
-                    <div className="w-full text-center bg-muted p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Outstanding Fines</p>
-                        <p className="text-2xl font-bold">₹{studentData.fines}</p>
-                    </div>
+                <CardContent>
+                    <div className="text-2xl font-bold">{currentlyBorrowed.length}</div>
+                    <p className="text-xs text-muted-foreground">Currently borrowed books</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Outstanding Fines</CardTitle>
+                    <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-destructive">₹{studentProfile.fines}</div>
+                    <p className="text-xs text-muted-foreground">Total amount due</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Next Due Date</CardTitle>
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {upcomingReturns.length > 0 ? (
+                        <>
+                            <div className="text-2xl font-bold">{isClient ? format(new Date(upcomingReturns[0].dueDate), "PPP") : '...'}</div>
+                            <p className="text-xs text-muted-foreground truncate" title={upcomingReturns[0].book?.title}>{upcomingReturns[0].book?.title}</p>
+                        </>
+                    ) : (
+                         <>
+                            <div className="text-2xl font-bold">-</div>
+                            <p className="text-xs text-muted-foreground">No books currently on loan</p>
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </div>
-        <div className="space-y-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Announcements</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">No new announcements.</p>
-                </CardContent>
-             </Card>
-        </div>
-      </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Upcoming Returns</CardTitle>
+                <CardDescription>Books you need to return soon.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {upcomingReturns.length > 0 ? (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Book Title</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Time Left</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {upcomingReturns.map(item => {
+                             const dueDate = new Date(item.dueDate);
+                             const isOverdue = new Date() > dueDate;
+                            return (
+                                <TableRow key={item.bookId}>
+                                    <TableCell className="font-medium">{item.book?.title}</TableCell>
+                                    <TableCell>{isClient ? format(dueDate, "PPP") : ''}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={isOverdue ? "destructive" : "outline"}>
+                                            {isClient ? formatDistanceToNow(dueDate, { addSuffix: true }) : ''}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p>You have no books to return.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     </div>
   );
 };

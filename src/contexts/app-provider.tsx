@@ -19,7 +19,7 @@ import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { books as initialBooks } from "@/lib/data";
-import { add, format, formatISO } from "date-fns";
+import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 
 interface AppContextType {
@@ -38,6 +38,7 @@ interface AppContextType {
   emailLogin: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   borrowBook: (bookId: string) => Promise<void>;
+  returnBook: (bookId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -140,12 +141,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     try {
       await auth.signOut();
-      // The onAuthStateChanged listener will handle clearing the authUser state.
-      // We explicitly clear student profile and redirect.
+      setAuthUser(null);
       setStudentProfile(null);
       setRoleState('student');
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      // Force redirect to the login page.
       router.push('/');
     } catch(error: any) {
        console.error("Logout failed:", error);
@@ -217,6 +216,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
        setStudentProfile(studentProfile);
     }
   };
+
+  const returnBook = async (bookId: string) => {
+    if (!studentProfile || !firestore) return;
+
+    const bookToReturn = books.find(b => b.id === bookId);
+    if (!bookToReturn) return;
+
+    let fine = 0;
+    const today = new Date();
+    
+    const updatedHistory = studentProfile.borrowHistory.map(item => {
+        if (item.bookId === bookId && !item.returnDate) {
+            const dueDate = new Date(item.dueDate);
+            const daysOverdue = differenceInDays(today, dueDate);
+
+            if (daysOverdue > 0) {
+                fine = daysOverdue * 10; // 10 INR per day
+            }
+            return { ...item, returnDate: formatISO(today), fine: fine };
+        }
+        return item;
+    });
+
+    const totalFines = (studentProfile.fines || 0) + fine;
+    const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory, fines: totalFines };
+    
+    try {
+        const updatedBooks = books.map(b => 
+            b.id === bookId ? { ...b, availableCopies: b.availableCopies + 1 } : b
+        );
+        setBooks(updatedBooks);
+        setStudentProfile(updatedProfile);
+
+        const studentDocRef = doc(firestore, "students", studentProfile.id);
+        await setDoc(studentDocRef, updatedProfile, { merge: true });
+        
+        toast({
+            title: `Book "${bookToReturn.title}" Returned`,
+            description: fine > 0 ? `A fine of ₹${fine} has been added to your account.` : 'Thank you for returning the book on time!',
+        });
+
+    } catch (error) {
+        console.error("Error returning book:", error);
+        toast({
+            variant: "destructive",
+            title: "Return Failed",
+            description: "Could not process the book return. Please try again."
+        });
+        // Revert local state
+        setBooks(books);
+        setStudentProfile(studentProfile);
+    }
+  };
   
   const loading = firebaseLoading;
 
@@ -235,7 +287,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signInWithGithub,
         emailLogin,
         logout,
-        borrowBook
+        borrowBook,
+        returnBook,
     }}>
       {children}
     </AppContext.Provider>

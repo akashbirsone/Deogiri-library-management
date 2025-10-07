@@ -28,6 +28,7 @@ export interface BorrowHistoryItem {
   borrowDate: string;
   returnDate?: string;
   dueDate: string;
+  fine?: number;
 }
 
 export interface Student extends User {

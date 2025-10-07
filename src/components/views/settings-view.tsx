@@ -10,19 +10,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { students } from "@/lib/data"
 import { Separator } from "@/components/ui/separator"
 import { BookCheck, BookCopy, IndianRupee, Camera } from "lucide-react"
 
 export function SettingsView() {
-  const { user } = useApp()
+  const { user, studentProfile } = useApp()
   const { toast } = useToast()
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
-  // Find the detailed student data
-  const studentData = students.find(s => s.id === user.id);
-
   const getInitials = (name: string) => {
+    if (!name) return "";
     const names = name.split(" ")
     return names
       .map((n) => n[0])
@@ -53,8 +50,12 @@ export function SettingsView() {
     }
   }
   
-  const booksIssued = studentData?.borrowHistory.filter(b => !b.returnDate).length ?? 0;
-  const booksReturned = studentData?.borrowHistory.filter(b => b.returnDate).length ?? 0;
+  if (!studentProfile) {
+    return <div>Loading profile...</div>
+  }
+
+  const booksIssued = studentProfile?.borrowHistory.filter(b => !b.returnDate).length ?? 0;
+  const booksReturned = studentProfile?.borrowHistory.filter(b => b.returnDate).length ?? 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -114,7 +115,7 @@ export function SettingsView() {
                     <div>
                         <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
                         <CardDescription>
-                            {studentData?.department ? `${studentData.department} | ` : ''} Student ID: {user.id}
+                            {studentProfile?.department ? `${studentProfile.department} | ` : ''} Student ID: {user.id}
                         </CardDescription>
                     </div>
                 </CardHeader>
@@ -138,7 +139,7 @@ export function SettingsView() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <BookCopy className="h-5 w-5 text-muted-foreground"/>
-                            <span className="text-sm font-medium">Books Currently Issued</span>
+                            <span className="text-sm font-medium">Active (Currently Issued)</span>
                         </div>
                         <span className="font-bold text-lg">{booksIssued}</span>
                     </div>
@@ -154,9 +155,9 @@ export function SettingsView() {
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                              <IndianRupee className="h-5 w-5 text-muted-foreground"/>
-                             <span className="text-sm font-medium">Outstanding Fines</span>
+                             <span className="text-sm font-medium">Total Outstanding Fines</span>
                         </div>
-                        <span className="font-bold text-lg text-destructive">₹{studentData?.fines ?? 0}</span>
+                        <span className="font-bold text-lg text-destructive">₹{studentProfile?.fines ?? 0}</span>
                     </div>
                 </CardContent>
              </Card>
