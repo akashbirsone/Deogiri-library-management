@@ -358,7 +358,7 @@ const StudentDashboard = () => {
                              const dueDate = new Date(item.dueDate);
                              const isOverdue = new Date() > dueDate;
                             return (
-                                <TableRow key={item.bookId}>
+                                <TableRow key={`${item.bookId}-${item.borrowDate}`}>
                                     <TableCell className="font-medium">{item.book?.title}</TableCell>
                                     <TableCell>{isClient ? format(dueDate, "PPP") : ''}</TableCell>
                                     <TableCell>
