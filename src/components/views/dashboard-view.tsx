@@ -30,10 +30,19 @@ export function DashboardView() {
 
 const AdminDashboard = () => {
     const totalBooks = books.length;
-    const borrowedBooks = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
-    const availableBooks = books.reduce((acc, book) => acc + book.availableCopies, 0);
+    const borrowedBooksCount = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
     const totalStudents = students.length;
     const totalFines = students.reduce((acc, student) => acc + student.fines, 0);
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const getInitials = (name: string) => {
+        const names = name.split(" ")
+        return names.map((n) => n[0]).join("").toUpperCase();
+    }
 
     const chartData = books.map(book => ({
         name: book.title.slice(0, 15) + (book.title.length > 15 ? '...' : ''),
@@ -60,7 +69,7 @@ const AdminDashboard = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{borrowedBooks}</div>
+            <div className="text-2xl font-bold">{borrowedBooksCount}</div>
             <p className="text-xs text-muted-foreground">Currently on loan</p>
           </CardContent>
         </Card>
@@ -86,21 +95,92 @@ const AdminDashboard = () => {
         </Card>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={chartData}>
-                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))'}}/>
-                    <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={chartData}>
+                      <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                      <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))'}}/>
+                      <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+              </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Recently Borrowed</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Book Title</TableHead>
+                            <TableHead>Student</TableHead>
+                            <TableHead>Due Date</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {students.flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                            const book = books.find(b => b.id === history.bookId);
+                            return (
+                                <TableRow key={`${student.id}-${history.bookId}`}>
+                                    <TableCell>{book?.title}</TableCell>
+                                    <TableCell>{student.name}</TableCell>
+                                    <TableCell>{isClient ? format(new Date(history.dueDate), "PPP") : ''}</TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+      </div>
+
+       <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Student Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Student</TableHead>
+                            <TableHead>Department</TableHead>
+                            <TableHead>Course</TableHead>
+                            <TableHead>Books on Loan</TableHead>
+                            <TableHead className="text-right">Fines</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {students.map(student => (
+                            <TableRow key={student.id}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="w-8 h-8">
+                                            <AvatarImage src={student.avatar} />
+                                            <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-medium">{student.name}</p>
+                                            <p className="text-xs text-muted-foreground">{student.email}</p>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>{student.department}</TableCell>
+                                <TableCell>{student.course}</TableCell>
+                                <TableCell className="font-medium">{student.borrowHistory.filter(h => !h.returnDate).length}</TableCell>
+                                <TableCell className="text-right font-medium">₹{student.fines}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
 
     </div>
   );
