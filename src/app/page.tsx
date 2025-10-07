@@ -24,6 +24,11 @@ export default function Page() {
       router.replace('/dashboard');
     }
     
+    // If the user is logged out, they should be on the login page.
+    if (!authUser) {
+      router.replace('/');
+    }
+    
     // If the user is authenticated but does NOT have a profile, they should stay on this page
     // to see the StudentInfoForm. If they are not logged in, they should see the LoginPage.
     // No explicit redirection is needed for these cases as the component handles it below.

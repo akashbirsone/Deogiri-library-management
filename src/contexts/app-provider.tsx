@@ -70,13 +70,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { firestore: fs, auth: au } = initializeFirebase();
     setFirestore(fs);
+    setAuth(au);
 
+    // This effect should only run once to initialize Firebase and set up the listener.
+    // It's crucial to set persistence *before* the onAuthStateChanged listener is attached
+    // to prevent race conditions and ensure the session is persisted correctly.
     setPersistence(au, browserLocalPersistence)
       .then(() => {
-        setAuth(au);
+        // After persistence is set, attach the auth state listener.
         const unsubscribe = onAuthStateChanged(au, async (user) => {
           if (user) {
             setAuthUser(user);
+            // Fetch the user's profile from Firestore.
             const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
@@ -85,9 +90,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setStudentProfile(profile);
               setRoleState(profile.role);
             } else {
+              // This case handles new sign-ups where a profile doesn't exist yet.
               setStudentProfile(null);
             }
           } else {
+            // User is signed out.
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
@@ -140,9 +147,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     if (!auth) return;
-    console.log("Logging out...");
-    await auth.signOut();
-    console.log("Logout successful.");
+    try {
+      await auth.signOut();
+      setAuthUser(null);
+      setStudentProfile(null);
+      setRoleState('student');
+      console.log("Logout successful.");
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    } catch(error: any) {
+       console.error("Logout failed:", error);
+       toast({ variant: "destructive", title: "Logout Failed", description: error.message });
+    }
   }
   
   const borrowBook = async (bookId: string) => {
