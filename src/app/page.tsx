@@ -12,6 +12,7 @@ export default function Page() {
   const router = useRouter();
 
   // This effect handles the final, successful redirection to the dashboard.
+  // It only runs when the user is fully authenticated and has a profile.
   useEffect(() => {
     // If we are done loading, the user is authenticated, and they have a profile,
     // then it's safe to redirect to the dashboard.
@@ -42,10 +43,10 @@ export default function Page() {
   }
 
   // This is a fallback state that appears briefly while the useEffect hook
-  // is processing the redirection to the dashboard.
+  // is processing the redirection to the dashboard for a fully authenticated user.
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-lg">Redirecting...</div>
+      <div className="text-lg">Redirecting to your dashboard...</div>
     </div>
   );
 }
