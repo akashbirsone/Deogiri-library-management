@@ -23,6 +23,7 @@ export function UserNav() {
   }
 
   const getInitials = (name: string) => {
+    if (!name) return "";
     const names = name.split(" ")
     return names
       .map((n) => n[0])
@@ -35,7 +36,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarImage src={user.avatar || undefined} alt={user.name} />
             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
           </Avatar>
         </Button>
