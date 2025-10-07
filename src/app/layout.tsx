@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProvider } from '@/contexts/app-provider';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Deogiri e-Granthalaya',
@@ -24,10 +25,12 @@ export default function RootLayout({
       <body className="font-body antialiased bg-muted/50">
         {/* The AppProvider wraps the entire application, providing global access 
             to authentication state and functions. */}
-        <AppProvider>
-          {children}
-          <Toaster />
-        </AppProvider>
+        <Suspense>
+          <AppProvider>
+            {children}
+            <Toaster />
+          </AppProvider>
+        </Suspense>
       </body>
     </html>
   );

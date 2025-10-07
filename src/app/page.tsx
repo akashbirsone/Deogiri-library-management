@@ -24,17 +24,16 @@ export default function Page() {
       router.replace('/dashboard');
     }
     
-    // If the user is logged out, they should be on the login page.
+    // If the user is logged out (e.g., after clicking logout), they should be on the login page.
     if (!authUser) {
-      // No explicit router.replace('/') is needed here, because the component's
-      // render logic below will render the LoginPage. This prevents a flash
-      // of the "Redirecting..." message on initial load for logged-out users.
-      return;
+      // By using router.replace('/'), we ensure that if a user logs out from any other page,
+      // they are correctly brought back to the root, which renders the LoginPage.
+      // This also handles the initial state for new visitors.
+      router.replace('/');
     }
     
     // If the user is authenticated but does NOT have a profile, they should stay on this page
-    // to see the StudentInfoForm. If they are not logged in, they should see the LoginPage.
-    // No explicit redirection is needed for these cases as the component handles it below.
+    // to see the StudentInfoForm. No redirection is needed here as the component renders the form below.
 
   }, [authUser, studentProfile, loading, router]);
 
@@ -63,7 +62,7 @@ export default function Page() {
   // is processing the redirection to the dashboard.
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-lg">Redirecting to dashboard...</div>
+      <div className="text-lg">Redirecting...</div>
     </div>
   );
 }

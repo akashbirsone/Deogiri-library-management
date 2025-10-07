@@ -20,6 +20,7 @@ import { Role, Student, Book, BorrowHistoryItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { books as initialBooks } from "@/lib/data";
 import { add, format, formatISO } from "date-fns";
+import { useRouter } from "next/navigation";
 
 interface AppContextType {
   role: Role;
@@ -64,6 +65,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [firebaseLoading, setFirebaseLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>(initialBooks);
+  const router = useRouter();
   
   const { toast } = useToast();
 
@@ -72,16 +74,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFirestore(fs);
     setAuth(au);
 
-    // This effect should only run once to initialize Firebase and set up the listener.
-    // It's crucial to set persistence *before* the onAuthStateChanged listener is attached
-    // to prevent race conditions and ensure the session is persisted correctly.
     setPersistence(au, browserLocalPersistence)
       .then(() => {
-        // After persistence is set, attach the auth state listener.
         const unsubscribe = onAuthStateChanged(au, async (user) => {
           if (user) {
             setAuthUser(user);
-            // Fetch the user's profile from Firestore.
             const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
@@ -90,11 +87,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setStudentProfile(profile);
               setRoleState(profile.role);
             } else {
-              // This case handles new sign-ups where a profile doesn't exist yet.
               setStudentProfile(null);
             }
           } else {
-            // User is signed out.
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
@@ -118,9 +113,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
-      console.log("Attempting Google Sign-In...");
       await signInWithPopup(auth, provider);
-      console.log("Google Sign-In Successful.");
     } catch (error: any) {
       console.error("Google Sign-In Failed:", error);
       toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
@@ -131,9 +124,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     const provider = new GithubAuthProvider();
     try {
-      console.log("Attempting GitHub Sign-In...");
       await signInWithPopup(auth, provider);
-      console.log("GitHub Sign-In Successful.");
     } catch (error: any) {
       console.error("GitHub Sign-In Failed:", error);
       toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
@@ -149,8 +140,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     try {
       await auth.signOut();
-      // The onAuthStateChanged listener will handle setting user state to null.
+      // The onAuthStateChanged listener will handle clearing the authUser state.
+      // We explicitly clear student profile and redirect.
+      setStudentProfile(null);
+      setRoleState('student');
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      // Force redirect to the login page.
+      router.push('/');
     } catch(error: any) {
        console.error("Logout failed:", error);
        toast({ variant: "destructive", title: "Logout Failed", description: error.message });
