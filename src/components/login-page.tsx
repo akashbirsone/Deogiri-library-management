@@ -28,6 +28,7 @@ export default function LoginPage() {
     }
     try {
         await emailLogin(email, password);
+        // Successful login is handled by onAuthStateChanged in AppProvider
     } catch (error: any) {
          toast({
             variant: "destructive",
@@ -37,7 +38,7 @@ export default function LoginPage() {
     }
   }
 
-  // This function is called directly from the "Continue with Google" button's onClick event.
+  // FIX: This function is called directly from the "Continue with Google" button's onClick event.
   // Calling signInWithPopup as a direct result of a user interaction (like a click)
   // is the key to preventing browsers from blocking the authentication popup.
   // If this were called inside a useEffect or asynchronously without a preceding user click,
@@ -53,7 +54,7 @@ export default function LoginPage() {
     }
   };
 
-  // This follows the same user-click pattern for GitHub to avoid the popup blocker.
+  // FIX: This follows the same user-click pattern for GitHub to avoid the popup blocker.
   const handleGithubSignIn = async () => {
     try {
       await signInWithGithub();

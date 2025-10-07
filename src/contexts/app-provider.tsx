@@ -37,6 +37,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Default user object for when no one is logged in.
 const defaultStudent: Student = {
     id: 'default',
     name: "Guest",
@@ -65,16 +66,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { firestore: fs, auth: au } = initializeFirebase();
     setFirestore(fs);
 
-    // This sets the session persistence type. By doing this once when the app loads,
-    // we ensure that Firebase knows to keep the user signed in across browser sessions.
+    // FIX: This sets the session persistence type. By doing this once when the app loads,
+    // and before the onAuthStateChanged listener is set, we ensure Firebase knows to 
+    // keep the user signed in across browser sessions. This helps prevent internal
+    // assertion errors related to pending promises.
     setPersistence(au, browserLocalPersistence)
       .then(() => {
         // After persistence is set, we can safely set up the auth state listener.
-        // This avoids race conditions and internal Firebase errors.
         setAuth(au);
         const unsubscribe = onAuthStateChanged(au, async (user) => {
           if (user) {
             setAuthUser(user);
+            // After authentication, we fetch the user's profile from Firestore.
             const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
@@ -83,9 +86,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setStudentProfile(profile);
               setRoleState(profile.role);
             } else {
+              // If the user is authenticated but has no profile, we set it to null.
+              // The UI will then prompt the user to complete their profile.
               setStudentProfile(null);
             }
           } else {
+            // If no user is logged in, clear all user-related state.
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
@@ -96,14 +102,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((error) => {
         console.error("Error setting auth persistence:", error);
+        toast({ variant: "destructive", title: "Authentication Error", description: "Could not set session persistence." });
         setFirebaseLoading(false);
       });
-  }, []);
+  }, [toast]);
 
   const setRole = (newRole: Role) => {
     setRoleState(newRole);
   };
   
+  // FIX: This function handles Google Sign-In.
+  // It uses async/await for clean asynchronous logic. The signInWithPopup is called
+  // directly inside the function, which itself is triggered by a user click,
+  // preventing the browser from blocking the popup.
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
@@ -111,12 +122,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.log("Attempting Google Sign-In...");
       await signInWithPopup(auth, provider);
       console.log("Google Sign-In Successful.");
+      // The onAuthStateChanged listener will handle the redirect and state update.
     } catch (error: any) {
       console.error("Google Sign-In Failed:", error);
       toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
     }
   };
 
+  // FIX: This function handles GitHub Sign-In, following the same correct pattern
+  // as the Google sign-in to avoid popup blockers.
   const signInWithGithub = async () => {
     if (!auth) return;
     const provider = new GithubAuthProvider();

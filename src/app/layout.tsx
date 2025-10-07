@@ -22,6 +22,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased bg-muted/50">
+        {/* The AppProvider wraps the entire application, providing global access 
+            to authentication state and functions. */}
         <AppProvider>
           {children}
           <Toaster />
