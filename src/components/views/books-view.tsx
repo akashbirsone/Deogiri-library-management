@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { books } from "@/lib/data";
+import { books as allBooks } from "@/lib/data";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,6 @@ import { Book as BookType } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useApp } from "@/contexts/app-provider";
 import { MoreVertical, PlusCircle, Trash, Edit } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +29,7 @@ export function BooksView() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [category, setCategory] = React.useState("all");
     const [department, setDepartment] = React.useState("all");
-    const [bookList, setBookList] = React.useState(books);
+    const [bookList, setBookList] = React.useState(allBooks);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingBook, setEditingBook] = React.useState<BookType | null>(null);
 
@@ -69,8 +63,8 @@ export function BooksView() {
         return matchesSearch && matchesCategory && matchesDepartment;
     });
     
-    const categories = ['all', ...Array.from(new Set(books.map(b => b.category)))];
-    const departments = ['all', ...Array.from(new Set(books.map(b => b.department).filter(Boolean))) as string[]];
+    const categories = ['all', ...Array.from(new Set(allBooks.map(b => b.category)))];
+    const departments = ['all', ...Array.from(new Set(allBooks.map(b => b.department).filter(Boolean))) as string[]];
 
 
   return (
@@ -106,10 +100,10 @@ export function BooksView() {
                     <p className="text-sm font-medium mb-2">Department</p>
                         <Select onValueChange={setDepartment} defaultValue="all">
                         <SelectTrigger className="w-full md:w-[240px]">
-                            <SelectValue placeholder="Select Course" />
+                            <SelectValue placeholder="Select Department" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Courses</SelectItem>
+                            <SelectItem value="all">All Departments</SelectItem>
                             {departments.filter(d => d !== 'all').map(dep => (
                                 <SelectItem key={dep} value={dep} className="capitalize">
                                     {dep}
