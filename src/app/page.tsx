@@ -11,30 +11,13 @@ export default function Page() {
   const { authUser, studentProfile, loading } = useApp();
   const router = useRouter();
 
-  // This effect handles redirection based on the authentication and profile status.
+  // This effect handles the final, successful redirection to the dashboard.
   useEffect(() => {
-    // We wait until the initial loading is complete before making any decisions.
-    if (loading) {
-      return;
-    }
-
-    // If the user is authenticated and has a complete student profile,
-    // they should be on the dashboard.
-    if (authUser && studentProfile) {
+    // If we are done loading, the user is authenticated, and they have a profile,
+    // then it's safe to redirect to the dashboard.
+    if (!loading && authUser && studentProfile) {
       router.replace('/dashboard');
     }
-    
-    // If the user is logged out (e.g., after clicking logout), they should be on the login page.
-    if (!authUser) {
-      // By using router.replace('/'), we ensure that if a user logs out from any other page,
-      // they are correctly brought back to the root, which renders the LoginPage.
-      // This also handles the initial state for new visitors.
-      router.replace('/');
-    }
-    
-    // If the user is authenticated but does NOT have a profile, they should stay on this page
-    // to see the StudentInfoForm. No redirection is needed here as the component renders the form below.
-
   }, [authUser, studentProfile, loading, router]);
 
 
