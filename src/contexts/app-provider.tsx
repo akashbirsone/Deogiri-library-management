@@ -12,6 +12,7 @@ import {
   GithubAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
+  Auth,
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, Firestore } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
@@ -21,23 +22,21 @@ import { useToast } from "@/hooks/use-toast";
 interface AppContextType {
   role: Role;
   setRole: (role: Role) => void;
-  user: Student; // This will now hold the full student profile from firestore
+  user: Student; 
   authUser: FirebaseAuthUser | null;
   studentProfile: Student | null;
   setStudentProfile: (profile: Student | null) => void;
   loading: boolean;
   firestore: Firestore | null;
   
-  // Auth methods
-  signInWithGoogle: () => void;
-  signInWithGithub: () => void;
+  signInWithGoogle: () => Promise<void>;
+  signInWithGithub: () => Promise<void>;
   emailLogin: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// A default student object for the initial state before a user is loaded
 const defaultStudent: Student = {
     id: 'default',
     name: "Guest",
@@ -56,23 +55,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>("student");
   const [authUser, setAuthUser] = useState<FirebaseAuthUser | null>(null);
   const [studentProfile, setStudentProfile] = useState<Student | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [firestore, setFirestore] = useState<Firestore | null>(null);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  
   const { toast } = useToast();
 
-  const { app, firestore, auth } = initializeFirebase();
+  useEffect(() => {
+    const { app, firestore: fs, auth: au } = initializeFirebase();
+    setFirestore(fs);
+
+    setPersistence(au, browserLocalPersistence)
+        .then(() => {
+            setAuth(au);
+        })
+        .catch((error) => {
+            console.error("Error setting auth persistence:", error);
+        })
+        .finally(() => {
+            setFirebaseLoading(false);
+        });
+  }, []);
 
   useEffect(() => {
-    if (!auth) {
-        setLoading(false);
-        return;
-    };
+    if (firebaseLoading || !auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setLoading(true);
+        setAuthLoading(true);
         if (user) {
             setAuthUser(user);
-            // User is signed in, now check for their profile in Firestore.
-            const studentDocRef = doc(firestore, "students", user.uid);
+            const studentDocRef = doc(firestore!, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
             if (studentDoc.exists()) {
@@ -80,25 +93,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 setStudentProfile(profile);
                 setRoleState(profile.role);
             } else {
-                // User is authenticated, but no profile exists.
-                // The UI will show the StudentInfoForm.
                 setStudentProfile(null);
             }
         } else {
-            // User is signed out.
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
         }
-        setLoading(false);
+        setAuthLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth, firestore, firebaseLoading]);
 
   const setRole = (newRole: Role) => {
-    // This function can be used for demo/testing purposes
-    // but the primary role should come from the student profile.
     setRoleState(newRole);
   };
   
@@ -131,12 +139,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     await auth.signOut();
   }
+  
+  const loading = firebaseLoading || authLoading;
 
   return (
     <AppContext.Provider value={{
         role,
         setRole,
-        user: studentProfile || defaultStudent, // Provide the detailed profile or a default
+        user: studentProfile || defaultStudent,
         authUser,
         studentProfile,
         setStudentProfile,
@@ -147,7 +157,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         emailLogin,
         logout
     }}>
-      {children}
+      {!loading && children}
     </AppContext.Provider>
   );
 }
