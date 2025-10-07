@@ -53,7 +53,7 @@ export function MyBooksView() {
                                     if (!book) return null;
                                     const isOverdue = new Date(item.dueDate) < new Date();
                                     return (
-                                        <TableRow key={item.bookId}>
+                                        <TableRow key={`${item.bookId}-${item.borrowDate}`}>
                                             <TableCell className="font-medium">{book.title}</TableCell>
                                             <TableCell>{isClient ? format(new Date(item.borrowDate), "PP") : ''}</TableCell>
                                             <TableCell>{isClient ? format(new Date(item.dueDate), "PP") : ''}</TableCell>
