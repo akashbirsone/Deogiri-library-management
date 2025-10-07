@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useApp } from "@/contexts/app-provider";
@@ -10,18 +11,27 @@ export default function Page() {
   const { authUser, studentProfile, loading } = useApp();
   const router = useRouter();
 
-  // This effect handles redirection after login.
+  // This effect handles redirection based on the authentication and profile status.
   useEffect(() => {
-    // We wait until loading is false to ensure auth state is determined.
-    // If the user is authenticated (authUser exists) and has a profile,
-    // we redirect them to the dashboard.
-    if (!loading && authUser && studentProfile) {
+    // We wait until the initial loading is complete before making any decisions.
+    if (loading) {
+      return;
+    }
+
+    // If the user is authenticated and has a complete student profile,
+    // they should be on the dashboard.
+    if (authUser && studentProfile) {
       router.replace('/dashboard');
     }
+    
+    // If the user is authenticated but does NOT have a profile, they should stay on this page
+    // to see the StudentInfoForm. If they are not logged in, they should see the LoginPage.
+    // No explicit redirection is needed for these cases as the component handles it below.
+
   }, [authUser, studentProfile, loading, router]);
 
 
-  // Show a loading indicator while Firebase is initializing.
+  // While Firebase is initializing and checking the auth state, show a loading screen.
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -30,21 +40,22 @@ export default function Page() {
     );
   }
 
-  // If not loading and there's no authenticated user, show the login page.
+  // If we are done loading and there is no authenticated user, show the login page.
   if (!authUser) {
     return <LoginPage />;
   }
 
-  // If the user is authenticated but doesn't have a student profile in Firestore,
-  // show the form to collect additional information.
+  // If the user is authenticated but doesn't yet have a student profile in Firestore,
+  // we must show them the form to collect the required additional information.
   if (authUser && !studentProfile) {
     return <StudentInfoForm />;
   }
 
-  // This is a fallback state while the useEffect for redirection is running.
+  // This is a fallback state that appears briefly while the useEffect hook
+  // is processing the redirection to the dashboard.
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-lg">Redirecting...</div>
+      <div className="text-lg">Redirecting to dashboard...</div>
     </div>
   );
 }
