@@ -22,6 +22,7 @@ export const users: User[] = [
 export const students: Student[] = [
     {
         id: "user-3",
+        studentId: "2526123456",
         name: "Student User",
         email: "student@deogiri.ac.in",
         role: "student",
@@ -32,13 +33,14 @@ export const students: Student[] = [
         contactNumber: "9876543210",
         yearOfStudy: "2nd",
         borrowHistory: [
-            { bookId: "book-1", borrowDate: "2024-04-01", returnDate: "2024-04-15", dueDate: "2024-04-14" },
+            { bookId: "book-1", borrowDate: "2024-04-01", returnDate: "2024-04-15", dueDate: "2024-04-14", fine: 10 },
             { bookId: "book-2", borrowDate: "2024-05-10", dueDate: "2024-05-24" },
             { bookId: "book-5", borrowDate: "2024-03-20", returnDate: "2024-04-02", dueDate: "2024-04-03" },
         ]
     },
     {
         id: "user-4",
+        studentId: "2526789012",
         name: "Jane Doe",
         email: "jane.d@deogiri.ac.in",
         role: "student",
@@ -54,6 +56,7 @@ export const students: Student[] = [
     },
      {
         id: "user-5",
+        studentId: "2526345678",
         name: "John Smith",
         email: "john.s@deogiri.ac.in",
         role: "student",
