@@ -23,9 +23,15 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function BooksView() {
-    const { role } = useApp();
+    const { role, borrowBook } = useApp();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [category, setCategory] = React.useState("all");
     const [department, setDepartment] = React.useState("all");
@@ -135,7 +141,7 @@ export function BooksView() {
         {filteredBooks.length > 0 ? (
              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredBooks.map((book) => (
-                    <BookCard key={book.id} book={book} onEdit={handleEditBook} onDelete={handleDeleteBook} />
+                    <BookCard key={book.id} book={book} onEdit={handleEditBook} onDelete={handleDeleteBook} onBorrow={() => borrowBook(book.id)} />
                 ))}
             </div>
         ) : (
@@ -150,7 +156,7 @@ export function BooksView() {
 }
 
 
-function BookCard({ book, onEdit, onDelete }: { book: BookType; onEdit: (book: BookType) => void; onDelete: (bookId: string) => void }) {
+function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit: (book: BookType) => void; onDelete: (bookId: string) => void; onBorrow: () => void; }) {
   const { role } = useApp();
   
   return (
@@ -199,8 +205,8 @@ function BookCard({ book, onEdit, onDelete }: { book: BookType; onEdit: (book: B
         <p className="text-xs text-muted-foreground mt-2">ISBN: {book.isbn}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" disabled={book.availableCopies === 0}>
-          {book.availableCopies > 0 ? 'Borrow' : 'Unavailable'}
+        <Button className="w-full" disabled={book.availableCopies === 0} onClick={onBorrow}>
+          {book.availableCopies > 0 ? 'Choice book' : 'Unavailable'}
         </Button>
       </CardFooter>
     </Card>
@@ -274,3 +280,5 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: BookType) => v
         </DialogContent>
     );
 };
+
+    

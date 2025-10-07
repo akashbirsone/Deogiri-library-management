@@ -14,10 +14,12 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
-import { Role, Student } from "@/types";
+import { Role, Student, Book, BorrowHistoryItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { books as initialBooks } from "@/lib/data";
+import { add, formatISO } from "date-fns";
 
 interface AppContextType {
   role: Role;
@@ -28,11 +30,13 @@ interface AppContextType {
   setStudentProfile: (profile: Student | null) => void;
   loading: boolean;
   firestore: Firestore | null;
+  books: Book[];
   
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
   emailLogin: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  borrowBook: (bookId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -59,6 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [firebaseLoading, setFirebaseLoading] = useState(true);
+  const [books, setBooks] = useState<Book[]>(initialBooks);
   
   const { toast } = useToast();
 
@@ -66,18 +71,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { firestore: fs, auth: au } = initializeFirebase();
     setFirestore(fs);
 
-    // FIX: This sets the session persistence type. By doing this once when the app loads,
-    // and before the onAuthStateChanged listener is set, we ensure Firebase knows to 
-    // keep the user signed in across browser sessions. This helps prevent internal
-    // assertion errors related to pending promises.
     setPersistence(au, browserLocalPersistence)
       .then(() => {
-        // After persistence is set, we can safely set up the auth state listener.
         setAuth(au);
         const unsubscribe = onAuthStateChanged(au, async (user) => {
           if (user) {
             setAuthUser(user);
-            // After authentication, we fetch the user's profile from Firestore.
             const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
@@ -86,12 +85,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setStudentProfile(profile);
               setRoleState(profile.role);
             } else {
-              // If the user is authenticated but has no profile, we set it to null.
-              // The UI will then prompt the user to complete their profile.
               setStudentProfile(null);
             }
           } else {
-            // If no user is logged in, clear all user-related state.
             setAuthUser(null);
             setStudentProfile(null);
             setRoleState("student");
@@ -111,10 +107,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRoleState(newRole);
   };
   
-  // FIX: This function handles Google Sign-In.
-  // It uses async/await for clean asynchronous logic. The signInWithPopup is called
-  // directly inside the function, which itself is triggered by a user click,
-  // preventing the browser from blocking the popup.
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
@@ -122,15 +114,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.log("Attempting Google Sign-In...");
       await signInWithPopup(auth, provider);
       console.log("Google Sign-In Successful.");
-      // The onAuthStateChanged listener will handle the redirect and state update.
     } catch (error: any) {
       console.error("Google Sign-In Failed:", error);
       toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
     }
   };
 
-  // FIX: This function handles GitHub Sign-In, following the same correct pattern
-  // as the Google sign-in to avoid popup blockers.
   const signInWithGithub = async () => {
     if (!auth) return;
     const provider = new GithubAuthProvider();
@@ -156,6 +145,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     console.log("Logout successful.");
   }
   
+  const borrowBook = async (bookId: string) => {
+    if (!studentProfile || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Login Required",
+        description: "You must be logged in to borrow a book.",
+      });
+      return;
+    }
+
+    const bookToBorrow = books.find(b => b.id === bookId);
+    if (!bookToBorrow) {
+      toast({ variant: "destructive", title: "Error", description: "Book not found." });
+      return;
+    }
+
+    if (bookToBorrow.availableCopies < 1) {
+      toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
+      return;
+    }
+
+    const today = new Date();
+    const dueDate = add(today, { days: 14 });
+
+    const newBorrowItem: BorrowHistoryItem = {
+      bookId: bookId,
+      borrowDate: formatISO(today),
+      dueDate: formatISO(dueDate),
+    };
+
+    const updatedHistory = [...studentProfile.borrowHistory, newBorrowItem];
+    const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory };
+
+    try {
+      // Update book availability in local state
+      const updatedBooks = books.map(b =>
+        b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
+      );
+      setBooks(updatedBooks);
+
+      // Update student profile in local state
+      setStudentProfile(updatedProfile);
+
+      // Update student profile in Firestore
+      const studentDocRef = doc(firestore, "students", studentProfile.id);
+      await setDoc(studentDocRef, { borrowHistory: updatedHistory }, { merge: true });
+
+      toast({
+        title: "Book Borrowed!",
+        description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
+      });
+
+    } catch (error) {
+       console.error("Error borrowing book:", error);
+       toast({
+           variant: "destructive",
+           title: "Uh oh! Something went wrong.",
+           description: "Could not borrow the book. Please try again.",
+       });
+       // Revert local state if firestore update fails
+       setBooks(books);
+       setStudentProfile(studentProfile);
+    }
+  };
+  
   const loading = firebaseLoading;
 
   return (
@@ -168,10 +222,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setStudentProfile,
         loading,
         firestore,
+        books,
         signInWithGoogle,
         signInWithGithub,
         emailLogin,
-        logout
+        logout,
+        borrowBook
     }}>
       {children}
     </AppContext.Provider>
@@ -185,3 +241,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
