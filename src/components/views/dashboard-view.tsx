@@ -5,7 +5,7 @@ import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
 import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { books, students } from "@/lib/data";
+import { books, users } from "@/lib/data";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, formatDistanceToNow } from "date-fns";
@@ -31,8 +31,8 @@ export function DashboardView() {
 const AdminDashboard = () => {
     const totalBooks = books.length;
     const borrowedBooksCount = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
-    const totalStudents = students.length;
-    const totalFines = students.reduce((acc, student) => acc + student.fines, 0);
+    const totalStudents = users.filter(u => u.role === 'student').length;
+    const totalFines = (users.filter(u => u.role === 'student') as any[]).reduce((acc, student) => acc + (student.fines || 0), 0);
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
@@ -126,7 +126,7 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {students.flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.id}-${history.bookId}`}>
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {students.map(student => (
+                        {(users.filter(u => u.role === 'student') as any[]).map(student => (
                             <TableRow key={student.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
@@ -257,7 +257,7 @@ const LibrarianDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {students.flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.id}-${history.bookId}`}>

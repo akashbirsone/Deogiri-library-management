@@ -1,60 +1,108 @@
 
 {
   "entities": {
-    "student": {
-      "title": "Student",
-      "description": "A student user of the library.",
+    "user": {
+      "title": "User",
+      "description": "A generic user of the library.",
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
-          "description": "The unique identifier for the student, same as their auth UID."
-        },
-        "studentId": {
-          "type": "string",
-          "description": "The formatted student ID, e.g., 2526123456."
+          "description": "The unique identifier for the user, same as their auth UID."
         },
         "name": {
           "type": "string",
-          "description": "The full name of the student."
+          "description": "The full name of the user."
         },
         "email": {
           "type": "string",
           "format": "email",
-          "description": "The email address of the student."
+          "description": "The email address of the user."
         },
         "role": {
           "type": "string",
-          "enum": ["student"],
-          "description": "The role of the user, which is always 'student'."
+          "enum": ["student", "librarian", "admin"],
+          "description": "The role of the user."
         },
         "avatar": {
           "type": "string",
           "format": "uri",
-          "description": "A URL to the student's profile picture."
+          "description": "A URL to the user's profile picture."
+        }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "student": {
+      "title": "Student",
+      "description": "A student user of the library, extends the base User entity.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/entities/user" }],
+      "properties": {
+        "studentId": {
+          "type": "string",
+          "description": "The formatted student ID, e.g., 2526123456."
         },
         "department": {
-            "type": "string",
-            "description": "The academic department of the student."
+          "type": "string",
+          "description": "The academic department of the student."
         },
         "course": {
-            "type": "string",
-            "description": "The course the student is enrolled in."
+          "type": "string",
+          "description": "The course the student is enrolled in."
         },
         "contactNumber": {
-            "type": "string",
-            "description": "The student's 10-digit contact number."
+          "type": "string",
+          "description": "The student's 10-digit contact number."
         },
         "yearOfStudy": {
-            "type": "string",
-            "description": "The student's current year of study."
+          "type": "string",
+          "description": "The student's current year of study."
         },
         "fines": {
           "type": "number",
           "description": "The total amount of outstanding fines in INR."
+        },
+        "borrowHistory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/entities/borrowedItem"
+          },
+          "description": "An array of items the student has borrowed."
         }
       },
-      "required": ["id", "studentId", "name", "email", "role", "department", "course", "contactNumber", "yearOfStudy"]
+      "required": ["studentId", "department", "course", "contactNumber", "yearOfStudy"]
+    },
+    "book": {
+      "title": "Book",
+      "description": "A book in the library catalog.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "isbn": { "type": "string" },
+        "category": { "type": "string" },
+        "department": { "type": "string" },
+        "publicationYear": { "type": "number" },
+        "totalCopies": { "type": "number" },
+        "availableCopies": { "type": "number" },
+        "coverImage": { "type": "string", "format": "uri" },
+        "coverImageHint": { "type": "string" }
+      },
+      "required": ["id", "title", "author", "isbn", "category", "publicationYear", "totalCopies", "availableCopies", "coverImage", "coverImageHint"]
+    },
+    "borrowedItem": {
+      "title": "Borrowed Item",
+      "description": "Represents a single borrowing transaction.",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string" },
+        "borrowDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "returnDate": { "type": "string", "format": "date-time" },
+        "fine": { "type": "number" }
+      },
+      "required": ["bookId", "borrowDate", "dueDate"]
     }
   },
   "auth": {
@@ -66,6 +114,12 @@
         "$ref": "#/entities/student"
       },
       "description": "Stores the public profile information for each student user."
+    },
+    "/books/{bookId}": {
+      "schema": {
+        "$ref": "#/entities/book"
+      },
+      "description": "Stores the library's book catalog."
     }
   }
 }

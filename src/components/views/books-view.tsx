@@ -206,7 +206,7 @@ function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button className="w-full" disabled={book.availableCopies === 0} onClick={onBorrow}>
-          {book.availableCopies > 0 ? 'Choice book' : 'Unavailable'}
+          {book.availableCopies > 0 ? 'Borrow Book' : 'Unavailable'}
         </Button>
       </CardFooter>
     </Card>
