@@ -16,16 +16,16 @@ import {
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, Firestore, setDoc } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
-import { Role, Student, Book, BorrowHistoryItem } from "@/types";
+import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { books as initialBooks } from "@/lib/data";
+import { books as initialBooks, users as initialUsers } from "@/lib/data";
 import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 
 interface AppContextType {
   role: Role;
   setRole: (role: Role) => void;
-  user: Student; 
+  user: User;
   authUser: FirebaseAuthUser | null;
   studentProfile: Student | null;
   setStudentProfile: (profile: Student | null) => void;
@@ -44,25 +44,19 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Default user object for when no one is logged in.
-const defaultStudent: Student = {
+const defaultUser: User = {
     id: 'default',
-    studentId: '',
     name: "Guest",
     email: "",
     role: "student",
     avatar: "",
-    fines: 0,
-    borrowHistory: [],
-    department: '',
-    course: '',
-    contactNumber: '',
-    yearOfStudy: '',
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>("student");
   const [authUser, setAuthUser] = useState<FirebaseAuthUser | null>(null);
   const [studentProfile, setStudentProfile] = useState<Student | null>(null);
+  const [nonStudentUser, setNonStudentUser] = useState<User | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [firebaseLoading, setFirebaseLoading] = useState(true);
@@ -81,19 +75,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const unsubscribe = onAuthStateChanged(au, async (user) => {
           if (user) {
             setAuthUser(user);
+            
+            // Check if the user is a student
             const studentDocRef = doc(fs, "students", user.uid);
             const studentDoc = await getDoc(studentDocRef);
 
             if (studentDoc.exists()) {
               const profile = studentDoc.data() as Student;
               setStudentProfile(profile);
+              setNonStudentUser(null);
               setRoleState(profile.role);
             } else {
-              setStudentProfile(null);
+              // Check if the user is a non-student (admin/librarian)
+              const staffUser = initialUsers.find(u => u.email === user.email);
+              if (staffUser) {
+                  setNonStudentUser(staffUser);
+                  setStudentProfile(null);
+                  setRoleState(staffUser.role);
+                  router.replace('/dashboard');
+              } else {
+                  // New user, potentially a student who needs to fill the form
+                  setStudentProfile(null);
+                  setNonStudentUser(null);
+                  setRoleState("student");
+              }
             }
           } else {
             setAuthUser(null);
             setStudentProfile(null);
+            setNonStudentUser(null);
             setRoleState("student");
           }
           setFirebaseLoading(false);
@@ -105,7 +115,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: "destructive", title: "Authentication Error", description: "Could not set session persistence." });
         setFirebaseLoading(false);
       });
-  }, [toast]);
+  }, [toast, router]);
 
   const setRole = (newRole: Role) => {
     setRoleState(newRole);
@@ -134,7 +144,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const emailLogin = async (email: string, password: string) => {
-    if (!auth) return;
+    if (!auth) throw new Error("Firebase Auth not initialized");
     await signInWithEmailAndPassword(auth, email, password);
   }
 
@@ -144,6 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await auth.signOut();
       setAuthUser(null);
       setStudentProfile(null);
+      setNonStudentUser(null);
       setRoleState('student');
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
       router.push('/');
@@ -157,8 +168,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!studentProfile || !firestore) {
       toast({
         variant: "destructive",
-        title: "Login Required",
-        description: "You must be logged in to borrow a book.",
+        title: "Action Not Allowed",
+        description: "Only students can borrow books.",
       });
       return;
     }
@@ -272,12 +283,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   const loading = firebaseLoading;
+  const currentUser = studentProfile || nonStudentUser || defaultUser;
 
   return (
     <AppContext.Provider value={{
         role,
         setRole,
-        user: studentProfile || defaultStudent,
+        user: currentUser,
         authUser,
         studentProfile,
         setStudentProfile,
@@ -303,3 +315,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    

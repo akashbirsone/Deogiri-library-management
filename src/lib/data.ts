@@ -1,20 +1,28 @@
+
 import type { Book, User, Student } from "@/types";
 
 export const users: User[] = [
   {
     id: "user-1",
-    name: "Admin User",
-    email: "admin@deogiri.ac.in",
+    name: "Admin",
+    email: "Deogiri_admin",
     role: "admin",
     avatar: "https://i.pravatar.cc/150?u=admin",
   },
   {
     id: "user-2",
-    name: "Librarian User",
-    email: "librarian@deogiri.ac.in",
+    name: "Librarian 1",
+    email: "librarian1",
     role: "librarian",
-    avatar: "https://i.pravatar.cc/150?u=librarian",
+    avatar: "https://i.pravatar.cc/150?u=librarian1",
   },
+  {
+    id: "user-6",
+    name: "Librarian 2",
+    email: "librarian2",
+    role: "librarian",
+    avatar: "https://i.pravatar.cc/150?u=librarian2",
+  }
 ];
 
 // This `students` array is now deprecated in favor of Firestore.
@@ -175,3 +183,5 @@ export const books: Book[] = [
     coverImageHint: "couple heart",
   },
 ];
+
+    
