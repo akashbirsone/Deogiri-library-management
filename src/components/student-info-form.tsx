@@ -28,6 +28,9 @@ import { Library } from "lucide-react"
 import { useApp } from "@/contexts/app-provider"
 import { useToast } from "@/hooks/use-toast"
 import { doc, setDoc } from "firebase/firestore"
+import { User } from "@/types"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 const departments = {
     "Faculty of Science & I.T.": ["B.Sc. CS", "B.Sc. IT", "BCA", "M.Sc. CS"],
@@ -59,44 +62,49 @@ export function StudentInfoForm() {
 
   const selectedDepartment = form.watch("department");
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (!authUser || !firestore) return;
 
-    try {
-        const studentId = `2526${Math.floor(100000 + Math.random() * 900000)}`;
-        const studentProfileData = {
-            uid: authUser.uid,
-            studentId: studentId,
-            name: values.fullName,
-            email: authUser.email,
-            role: "student" as const,
-            avatar: authUser.photoURL || `https://i.pravatar.cc/150?u=${authUser.uid}`,
-            department: values.department,
-            course: values.course,
-            contactNumber: values.contactNumber,
-            yearOfStudy: values.yearOfStudy,
-            fines: 0,
-            borrowHistory: []
-        };
+    const studentId = `2526${Math.floor(100000 + Math.random() * 900000)}`;
+    const studentProfileData = {
+        uid: authUser.uid,
+        studentId: studentId,
+        name: values.fullName,
+        email: authUser.email,
+        role: "student" as const,
+        avatar: authUser.photoURL || `https://i.pravatar.cc/150?u=${authUser.uid}`,
+        department: values.department,
+        course: values.course,
+        contactNumber: values.contactNumber,
+        yearOfStudy: values.yearOfStudy,
+        fines: 0,
+        borrowHistory: []
+    };
 
-        const userDocRef = doc(firestore, "users", authUser.uid);
-        await setDoc(userDocRef, studentProfileData, { merge: true });
-        
-        setUser(studentProfileData);
-
+    const userDocRef = doc(firestore, "users", authUser.uid);
+    setDoc(userDocRef, studentProfileData, { merge: true })
+      .then(() => {
+        setUser(studentProfileData as User);
         toast({
             title: "Profile Saved!",
             description: "Your information has been saved successfully. Redirecting...",
         });
+      })
+      .catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: studentProfileData,
+          });
 
-    } catch (error) {
-        console.error("Error saving student profile:", error);
-        toast({
-            variant: "destructive",
-            title: "Uh oh! Something went wrong.",
-            description: "Could not save your profile. Please try again.",
-        });
-    }
+          errorEmitter.emit('permission-error', permissionError);
+
+          toast({
+              variant: "destructive",
+              title: "Uh oh! Something went wrong.",
+              description: "Could not save your profile. Please try again.",
+          });
+      });
   }
 
   return (

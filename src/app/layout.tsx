@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProvider } from '@/contexts/app-provider';
 import { Suspense } from 'react';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'Deogiri e-Granthalaya',
@@ -27,6 +28,7 @@ export default function RootLayout({
             to authentication state and functions. */}
         <Suspense>
           <AppProvider>
+            <FirebaseErrorListener />
             {children}
             <Toaster />
           </AppProvider>
