@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
 import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, formatDistanceToNow } from "date-fns";
@@ -388,5 +388,7 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
 
     
