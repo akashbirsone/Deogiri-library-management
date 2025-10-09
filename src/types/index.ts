@@ -14,6 +14,8 @@ export interface User {
   yearOfStudy?: string;
   borrowHistory?: BorrowHistoryItem[];
   fines?: number;
+  createdAt?: any; // Should be Firestore Timestamp
+  lastLogin?: any; // Should be Firestore Timestamp
 }
 
 export interface Book {

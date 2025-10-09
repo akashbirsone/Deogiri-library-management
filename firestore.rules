@@ -1,69 +1,114 @@
 /**
- * @fileoverview Firestore Security Rules for the library application.
+ * @fileoverview Firestore Security Rules for the Library App.
  *
  * Core Philosophy:
- * This ruleset enforces a user-ownership model for user profiles and public read access for the book catalog.
+ * This ruleset enforces a role-based access control model, granting different levels of
+ * access based on the user's role (student, librarian, or admin). Admins have full
+ * control over books and users, while students can only read books and update their profiles.
  *
  * Data Structure:
- * - Users are stored in `/users/{userId}`.
- * - Books are stored in `/books/{bookId}`.
+ * - /users/{userId}: Stores user profile information. The `userId` must match the
+ *   authenticated user's UID.
+ * - /books/{bookId}: Stores book catalog information.
  *
  * Key Security Decisions:
- * - Users can only read and write their own profile data.
- * - The book catalog is publicly readable, but only authorized users can modify it.
+ * - Only admins can create, update, or delete books.
+ * - Students can only read books.
+ * - Users can only update their own profile information.
+ * - Listing of users is only allowed for admins.
  *
  * Denormalization for Authorization:
- *  - User roles are stored directly in the user document for easy access.
- *
- * Structural Segregation:
- *  - There is no segregation of public and private content in this initial ruleset.
+ * The `role` field is stored directly within the `/users/{userId}` document. This allows
+ * for efficient role-based access control without additional reads.
+ * For books, an admin role is required for modification. No specific ownership is needed on the `book` entity.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows users to read and write their own profile data.
-     * @path /users/{userId}
-     * @allow (get, update, delete) User with matching UID can read and modify their own profile.
-     *   Example: User with UID "user123" can read and update data at /users/user123.
-     * @allow (create) Any signed-in user can create their own profile.
-     *   Example: A signed-in user with UID "user456" can create a profile at /users/user456.
-     * @deny (get, update, delete) User with mismatched UID cannot access another user's profile.
-     *   Example: User with UID "user123" cannot read or modify data at /users/user456.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
      */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false; // No listing of all users.
-
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
-      allow delete: if isExistingOwner(userId);
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     /**
-     * @description Allows public read access to books, but restricts modifications to authorized users.
+     * @description Checks if the user is an admin.
+     * @return {boolean} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document and it exists.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user is the owner and the document exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user123' creates their own profile.
+     *   request.auth.uid: 'user123'
+     *   request.resource.data.uid: 'user123'
+     * @allow (get) User with UID 'user123' reads their own profile.
+     *   request.auth.uid: 'user123'
+     * @allow (update) User with UID 'user123' updates their own profile.
+     *   request.auth.uid: 'user123'
+     * @deny (create) User with UID 'user123' tries to create a profile for 'user456'.
+     *   request.auth.uid: 'user123'
+     *   request.resource.data.uid: 'user456'
+     * @deny (update) User with UID 'user123' tries to update the profile for 'user456'.
+     *   request.auth.uid: 'user123'
+     * @principle Enforces user-ownership for profile data.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for books.
      * @path /books/{bookId}
-     * @allow (get, list) Any user can read the book catalog.
-     *   Example: Any user, signed in or not, can read the book data at /books/book123.
-     * @deny (create, update, delete) Only authorized users can modify the book catalog.  No authorization implemented.
-     *   Example: A user, regardless of their role, cannot create, update, or delete books.
-     * @principle Public read access with owner-only writes (currently no ownership implemented).
+     * @allow (get) Any user can read a book.
+     * @allow (create) Admin creates a new book.
+     *   request.auth.uid: 'admin123' (and user 'admin123' has role 'admin' in /users/admin123)
+     * @allow (update) Admin updates a book.
+     *   request.auth.uid: 'admin123' (and user 'admin123' has role 'admin' in /users/admin123)
+     * @allow (delete) Admin deletes a book.
+     *   request.auth.uid: 'admin123' (and user 'admin123' has role 'admin' in /users/admin123)
+     * @deny (create) Non-admin user tries to create a book.
+     *   request.auth.uid: 'user123' (and user 'user123' has role 'student' in /users/user123)
+     * @deny (update) Non-admin user tries to update a book.
+     *   request.auth.uid: 'user123' (and user 'user123' has role 'student' in /users/user123)
+     * @deny (delete) Non-admin user tries to delete a book.
+     *   request.auth.uid: 'user123' (and user 'user123' has role 'student' in /users/user123)
+     * @principle Restricts book management to admins.
      */
     match /books/{bookId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once authorization is implemented.
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
   }
 }

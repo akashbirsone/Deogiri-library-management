@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -74,20 +74,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const userDoc = await getDoc(userDocRef);
 
             if (userDoc.exists()) {
-              setUser(userDoc.data() as User);
+              const userData = userDoc.data() as User;
+              setUser(userData);
+              // Update last login timestamp for existing user
+              updateDoc(userDocRef, { lastLogin: serverTimestamp() }).catch(e => console.error("Failed to update last login", e));
+
             } else {
-              // This case handles brand new users or ensures the admin user is correct.
+              // This is a new user, create their profile
               const isAdmin = fbUser.email === "deogiri_admin@college.com";
-              const newUser: User = {
-                uid: fbUser.uid,
+              const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
                 name: isAdmin ? "Deogiri Admin" : (fbUser.displayName || "New User"),
                 email: fbUser.email,
-                role: isAdmin ? "admin" : "student", // Assign role based on email
+                role: isAdmin ? "admin" : "student",
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
               };
-               setDoc(userDocRef, newUser, { merge: true })
+
+              setDoc(userDocRef, newUser)
                 .then(() => {
-                  setUser(newUser);
+                  setUser({ uid: fbUser.uid, ...newUser });
                 })
                 .catch(async (serverError) => {
                   const permissionError = new FirestorePermissionError({
@@ -101,6 +107,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAuthUser(null);
             setUser(null);
+            setUsers([]); // Clear users on logout
              // When logging out, ensure we are on the home page.
             if (window.location.pathname !== '/') {
               router.push('/');
@@ -124,6 +131,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
     };
     
+    // All users can read books
     const booksCollection = collection(firestore, 'books');
     const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
         const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
@@ -134,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     let unsubUsers = () => {};
+    // Only admins and librarians can read all users
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
         unsubUsers = onSnapshot(usersCollection, (snapshot) => {
@@ -229,7 +238,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
-    const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory };
 
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     const bookDocRef = doc(firestore, "books", bookId);
@@ -241,7 +249,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return setDoc(bookDocRef, bookUpdateData, { merge: true });
       })
       .then(() => {
-        setUser(updatedProfile);
+        setUser({ ...studentProfile, borrowHistory: updatedHistory });
         toast({
           title: "Book Borrowed!",
           description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
@@ -282,29 +290,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     const totalFines = (studentProfile.fines || 0) + fine;
-    const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory, fines: totalFines };
     
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     const updateData = { borrowHistory: updatedHistory, fines: totalFines };
+    const bookDocRef = doc(firestore, "books", bookId);
+    const bookUpdateData = { availableCopies: bookToReturn.availableCopies + 1 };
 
     setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
-        const bookDocRef = doc(firestore, "books", bookId);
-        return setDoc(bookDocRef, { availableCopies: bookToReturn.availableCopies + 1 }, { merge: true });
+        return setDoc(bookDocRef, bookUpdateData, { merge: true });
       })
       .then(() => {
-        setUser(updatedProfile);
-        
+        setUser({ ...studentProfile, borrowHistory: updatedHistory, fines: totalFines });
         toast({
             title: `Book "${bookToReturn.title}" Returned`,
             description: fine > 0 ? `A fine of ₹${fine} has been added to your account.` : 'Thank you for returning the book on time!',
         });
       })
       .catch(async (error) => {
+        const isUserDocError = error.message.includes("users");
         const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
+            path: isUserDocError ? userDocRef.path : bookDocRef.path,
             operation: 'update',
-            requestResourceData: updateData,
+            requestResourceData: isUserDocError ? updateData : bookUpdateData,
         });
         errorEmitter.emit('permission-error', permissionError);
     });
@@ -390,5 +398,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
