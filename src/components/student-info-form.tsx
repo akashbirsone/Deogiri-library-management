@@ -195,7 +195,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your year of study" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="1st">1st Year</SelectItem>
