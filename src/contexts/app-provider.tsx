@@ -70,7 +70,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
-              // New user, create a default student profile
+              // This is a new user (likely via social login). Create a default student profile.
               const newUser: User = {
                 uid: fbUser.uid,
                 name: fbUser.displayName || "New User",
@@ -187,7 +187,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
         );
         setBooks(updatedBooks);
-        setUser(updatedProfile); // Correctly update local state
+        setUser(updatedProfile);
   
         toast({
           title: "Book Borrowed!",
@@ -244,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             b.id === bookId ? { ...b, availableCopies: b.availableCopies + 1 } : b
         );
         setBooks(updatedBooks);
-        setUser(updatedProfile); // Correctly update local state
+        setUser(updatedProfile);
         
         toast({
             title: `Book "${bookToReturn.title}" Returned`,
@@ -296,5 +296,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
