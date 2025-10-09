@@ -23,10 +23,12 @@ export function UsersView() {
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const { toast } = useToast();
     
-    const filteredUsers = users.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(user => {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        const nameMatch = user.name && user.name.toLowerCase().includes(lowerCaseSearchTerm);
+        const emailMatch = user.email && user.email.toLowerCase().includes(lowerCaseSearchTerm);
+        return nameMatch || emailMatch;
+    });
 
     const getInitials = (name: string) => {
         if (!name) return "";
