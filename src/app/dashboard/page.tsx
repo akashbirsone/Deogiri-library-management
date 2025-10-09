@@ -87,6 +87,10 @@ function PageContent() {
     }
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <>
       <Sidebar
