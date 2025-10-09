@@ -76,12 +76,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
-              // This case handles brand new users signing up.
+              // This case handles brand new users or ensures the admin user is correct.
+              const isAdmin = fbUser.email === "deogiri_admin@college.com";
               const newUser: User = {
                 uid: fbUser.uid,
-                name: fbUser.displayName || "New User",
+                name: isAdmin ? "Deogiri Admin" : (fbUser.displayName || "New User"),
                 email: fbUser.email,
-                role: "student", // Default role for new sign-ups
+                role: isAdmin ? "admin" : "student", // Assign role based on email
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
               };
                setDoc(userDocRef, newUser, { merge: true })
@@ -123,7 +124,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
     };
     
-    // All authenticated users can listen to books.
     const booksCollection = collection(firestore, 'books');
     const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
         const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
@@ -134,7 +134,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     let unsubUsers = () => {};
-    // Only admins and librarians should listen to the users collection.
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
         unsubUsers = onSnapshot(usersCollection, (snapshot) => {
@@ -190,7 +189,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await auth.signOut();
       setAuthUser(null);
       setUser(null);
-      setUsers([]); // Clear user list on logout
+      setUsers([]);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch(error: any) {
        console.error("Logout failed:", error);
@@ -235,8 +234,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     const bookDocRef = doc(firestore, "books", bookId);
     const bookUpdateData = { availableCopies: bookToBorrow.availableCopies - 1 };
+    const userUpdateData = { borrowHistory: updatedHistory };
 
-    setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true })
+    setDoc(userDocRef, userUpdateData, { merge: true })
       .then(() => {
         return setDoc(bookDocRef, bookUpdateData, { merge: true });
       })
@@ -252,7 +252,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const permissionError = new FirestorePermissionError({
             path: isUserDocError ? userDocRef.path : bookDocRef.path,
             operation: 'update',
-            requestResourceData: isUserDocError ? { borrowHistory: updatedHistory } : bookUpdateData,
+            requestResourceData: isUserDocError ? userUpdateData : bookUpdateData,
           });
           errorEmitter.emit('permission-error', permissionError);
       });
