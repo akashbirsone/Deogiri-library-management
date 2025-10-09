@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label"
 import { User } from "@/types"
 
 export function UsersView() {
-    const { users, updateUser, deleteUser } = useApp();
+    const { user: currentUser, users, updateUser, deleteUser } = useApp();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
@@ -50,6 +50,13 @@ export function UsersView() {
         setIsFormOpen(false);
         setEditingUser(null);
     };
+
+    const canManageUser = (targetUser: User) => {
+        if (!currentUser) return false;
+        if (currentUser.role === 'admin') return true;
+        if (currentUser.role === 'librarian' && targetUser.role === 'student') return true;
+        return false;
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -96,25 +103,27 @@ export function UsersView() {
                                         <Badge variant="outline">{user.role}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Toggle menu</span>
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDeleteUser(user.uid)} className="text-destructive">
-                                                    <Trash className="mr-2 h-4 w-4" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        {canManageUser(user) && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Toggle menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteUser(user.uid)} className="text-destructive">
+                                                        <Trash className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -178,5 +187,3 @@ const UserForm = ({ user, onSubmit, onClose }: { user: User; onSubmit: (data: Us
         </DialogContent>
     );
 };
-
-    

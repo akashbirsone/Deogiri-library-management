@@ -82,10 +82,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             } else {
               // This is a new user, create their profile
               const isAdmin = fbUser.email === "deogiri_admin@college.com";
+              const newUserRole = isAdmin ? "admin" : "student";
+              
               const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
                 name: isAdmin ? "Deogiri Admin" : (fbUser.displayName || "New User"),
                 email: fbUser.email,
-                role: isAdmin ? "admin" : "student",
+                role: newUserRole,
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
                 createdAt: serverTimestamp(),
                 lastLogin: serverTimestamp(),
@@ -108,6 +110,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             setAuthUser(null);
             setUser(null);
             setUsers([]); // Clear users on logout
+            setBooks([]); // Clear books on logout
              // When logging out, ensure we are on the home page.
             if (window.location.pathname !== '/') {
               router.push('/');
@@ -146,7 +149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
         unsubUsers = onSnapshot(usersCollection, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as User));
+            const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
             setUsers(usersData);
         }, async (error) => {
             const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
@@ -241,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     const bookDocRef = doc(firestore, "books", bookId);
-    const bookUpdateData = { availableCopies: bookToBorrow.availableCopies - 1 };
+    const bookUpdateData = { availableCopies: bookToBorrow.totalCopies - 1 };
     const userUpdateData = { borrowHistory: updatedHistory };
 
     setDoc(userDocRef, userUpdateData, { merge: true })

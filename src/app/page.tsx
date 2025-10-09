@@ -6,7 +6,7 @@ import { StudentInfoForm } from "@/components/student-info-form";
 import LoginPage from "@/components/login-page";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import type { Role, User } from "@/types";
+import type { User } from "@/types";
 
 // Helper to determine where to redirect based on role and profile status
 const getRedirectPath = (user: User | null): string | null => {
@@ -54,8 +54,16 @@ export default function Page() {
     return <LoginPage />;
   }
   
-  // If the user is authenticated but doesn't have a complete profile yet, show the form.
-  // This is the key state for new student sign-ups. Admins/Librarians will be redirected by the useEffect.
+  // If the user is authenticated, but we are still fetching their profile, show a redirecting message.
+  if (authUser && !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading your profile...</div>
+      </div>
+    );
+  }
+
+  // If the user is authenticated and is a new student (no studentId), show the form.
   if (authUser && user?.role === 'student' && !user.studentId) {
     return <StudentInfoForm />;
   }
