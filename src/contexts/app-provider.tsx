@@ -76,6 +76,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
+              // This handles new sign-ups, defaulting them to a student role shell.
+              // They will be prompted to complete their profile.
               const newUser: User = {
                 uid: fbUser.uid,
                 name: fbUser.displayName || "New User",
@@ -99,7 +101,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAuthUser(null);
             setUser(null);
-            router.push('/');
+            // Only force redirect if they are not already on the landing page
+            if (window.location.pathname !== '/') {
+              router.push('/');
+            }
           }
           setLoading(false);
         });
@@ -225,19 +230,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
       })
       .catch(async (error) => {
-         console.error("Error borrowing book:", error);
          const permissionError = new FirestorePermissionError({
             path: userDocRef.path,
             operation: 'update',
             requestResourceData: { borrowHistory: updatedHistory },
           });
           errorEmitter.emit('permission-error', permissionError);
-
-         toast({
-             variant: "destructive",
-             title: "Uh oh! Something went wrong.",
-             description: "Could not borrow the book. Please try again.",
-         });
       });
   };
 
@@ -268,7 +266,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory, fines: totalFines };
     
     const userDocRef = doc(firestore, "users", studentProfile.uid);
-    setDoc(userDocRef, { borrowHistory: updatedHistory, fines: totalFines }, { merge: true })
+    const updateData = { borrowHistory: updatedHistory, fines: totalFines };
+
+    setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
         const bookDocRef = doc(firestore, "books", bookId);
         setDoc(bookDocRef, { availableCopies: bookToReturn.availableCopies + 1 }, { merge: true });
@@ -281,19 +281,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
       })
       .catch(async (error) => {
-        console.error("Error returning book:", error);
         const permissionError = new FirestorePermissionError({
             path: userDocRef.path,
             operation: 'update',
-            requestResourceData: { borrowHistory: updatedHistory, fines: totalFines },
+            requestResourceData: updateData,
         });
         errorEmitter.emit('permission-error', permissionError);
-
-        toast({
-            variant: "destructive",
-            title: "Return Failed",
-            description: "Could not process the book return. Please try again."
-        });
     });
   };
   
@@ -377,3 +370,4 @@ export const useApp = () => {
   }
   return context;
 };
+
