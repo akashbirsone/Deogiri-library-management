@@ -78,16 +78,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 role: "student",
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
               };
-              await setDoc(userDocRef, newUser)
-              .catch(async (serverError) => {
-                const permissionError = new FirestorePermissionError({
-                  path: userDocRef.path,
-                  operation: 'create',
-                  requestResourceData: newUser,
+               setDoc(userDocRef, newUser, { merge: true })
+                .then(() => {
+                  setUser(newUser);
+                })
+                .catch(async (serverError) => {
+                  const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'create',
+                    requestResourceData: newUser,
+                  });
+                  errorEmitter.emit('permission-error', permissionError);
                 });
-                errorEmitter.emit('permission-error', permissionError);
-              });
-              setUser(newUser);
             }
           } else {
             setAuthUser(null);
