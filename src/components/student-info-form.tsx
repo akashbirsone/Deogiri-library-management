@@ -135,7 +135,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your department" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {Object.keys(departments).map(dep => (
@@ -158,7 +158,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your course" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {selectedDepartment && departments[selectedDepartment as keyof typeof departments].map(course => (
@@ -195,7 +195,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your year of study" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="1st">1st Year</SelectItem>
