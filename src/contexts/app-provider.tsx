@@ -76,8 +76,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
-              // This handles new sign-ups, defaulting them to a student role shell.
-              // They will be prompted to complete their profile.
               const newUser: User = {
                 uid: fbUser.uid,
                 name: fbUser.displayName || "New User",
@@ -101,7 +99,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAuthUser(null);
             setUser(null);
-            // Only force redirect if they are not already on the landing page
             if (window.location.pathname !== '/') {
               router.push('/');
             }
@@ -125,15 +122,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
         const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
         setBooks(booksData);
-    }, (error) => {
-        console.error("Error fetching books:", error);
+    }, async (error) => {
+        const permissionError = new FirestorePermissionError({ path: 'books', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     const unsubUsers = onSnapshot(usersCollection, (snapshot) => {
         const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as User));
         setUsers(usersData);
-    }, (error) => {
-        console.error("Error fetching users:", error);
+    }, async (error) => {
+        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => {
@@ -148,8 +147,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error("Google Sign-In Failed:", error);
-      toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error("Google Sign-In Failed:", error);
+        toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
+      }
     }
   };
 
@@ -159,8 +160,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error("GitHub Sign-In Failed:", error);
-      toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error("GitHub Sign-In Failed:", error);
+        toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
+      }
     }
   };
 
@@ -217,23 +220,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory };
 
     const userDocRef = doc(firestore, "users", studentProfile.uid);
+    const bookDocRef = doc(firestore, "books", bookId);
+    const bookUpdateData = { availableCopies: bookToBorrow.availableCopies - 1 };
+
     setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true })
       .then(() => {
-        const bookDocRef = doc(firestore, "books", bookId);
-        setDoc(bookDocRef, { availableCopies: bookToBorrow.availableCopies - 1 }, { merge: true });
-
+        return setDoc(bookDocRef, bookUpdateData, { merge: true });
+      })
+      .then(() => {
         setUser(updatedProfile);
-  
         toast({
           title: "Book Borrowed!",
           description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
         });
       })
       .catch(async (error) => {
-         const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
+         // This could be from either setDoc. A more robust implementation might check which one failed.
+          const permissionError = new FirestorePermissionError({
+            path: error.message.includes("users") ? userDocRef.path : bookDocRef.path,
             operation: 'update',
-            requestResourceData: { borrowHistory: updatedHistory },
+            requestResourceData: error.message.includes("users") ? { borrowHistory: updatedHistory } : bookUpdateData,
           });
           errorEmitter.emit('permission-error', permissionError);
       });
@@ -271,8 +277,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
         const bookDocRef = doc(firestore, "books", bookId);
-        setDoc(bookDocRef, { availableCopies: bookToReturn.availableCopies + 1 }, { merge: true });
-
+        return setDoc(bookDocRef, { availableCopies: bookToReturn.availableCopies + 1 }, { merge: true });
+      })
+      .then(() => {
         setUser(updatedProfile);
         
         toast({
@@ -371,3 +378,4 @@ export const useApp = () => {
   return context;
 };
 
+    
