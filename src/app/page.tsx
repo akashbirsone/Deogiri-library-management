@@ -6,20 +6,33 @@ import { StudentInfoForm } from "@/components/student-info-form";
 import LoginPage from "@/components/login-page";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import type { Role } from "@/types";
+
+// Helper to determine where to redirect based on role and profile status
+const getRedirectPath = (role: Role, hasProfile: boolean): string | null => {
+  if (role === 'admin' || role === 'librarian') {
+    return '/dashboard';
+  }
+  if (role === 'student' && hasProfile) {
+    return '/dashboard';
+  }
+  return null; // Stay on the current page (which will show the form for new students)
+};
 
 export default function Page() {
-  const { authUser, studentProfile, loading } = useApp();
+  const { authUser, user, loading } = useApp();
   const router = useRouter();
 
-  // This effect handles the final, successful redirection to the dashboard.
-  // It only runs when the user is fully authenticated and has a profile.
+  // This effect handles all redirection logic once loading is complete.
   useEffect(() => {
-    // If we are done loading, the user is authenticated, and they have a profile,
-    // then it's safe to redirect to the dashboard.
-    if (!loading && authUser && studentProfile) {
-      router.replace('/dashboard');
+    if (!loading && authUser) {
+      const hasProfile = !!user?.studentId; // A simple check to see if the student profile is complete
+      const path = getRedirectPath(user.role, hasProfile);
+      if (path) {
+        router.replace(path);
+      }
     }
-  }, [authUser, studentProfile, loading, router]);
+  }, [authUser, user, loading, router]);
 
 
   // While Firebase is initializing and checking the auth state, show a loading screen.
@@ -35,10 +48,10 @@ export default function Page() {
   if (!authUser) {
     return <LoginPage />;
   }
-
-  // If the user is authenticated but doesn't yet have a student profile in Firestore,
-  // we must show them the form to collect the required additional information.
-  if (authUser && !studentProfile) {
+  
+  // If the user is authenticated but doesn't have a complete profile yet, show the form.
+  // This is the key state for new student sign-ups.
+  if (authUser && user.role === 'student' && !user.studentId) {
     return <StudentInfoForm />;
   }
 

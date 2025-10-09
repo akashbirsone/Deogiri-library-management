@@ -11,12 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format, formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { Student } from "@/types";
 
 
 export function DashboardView() {
-  const { role } = useApp();
+  const { user } = useApp();
 
-  switch (role) {
+  switch (user.role) {
     case "admin":
       return <AdminDashboard />;
     case "librarian":
@@ -126,7 +127,7 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter((h:any) => !h.returnDate).map((h:any) => ({student: s, history: h}))).slice(0, 5).map(({student, history}: any) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.id}-${history.bookId}`}>
@@ -174,7 +175,7 @@ const AdminDashboard = () => {
                                 </TableCell>
                                 <TableCell>{student.department}</TableCell>
                                 <TableCell>{student.course}</TableCell>
-                                <TableCell className="font-medium">{student.borrowHistory.filter(h => !h.returnDate).length}</TableCell>
+                                <TableCell className="font-medium">{student.borrowHistory.filter((h:any) => !h.returnDate).length}</TableCell>
                                 <TableCell className="text-right font-medium">₹{student.fines}</TableCell>
                             </TableRow>
                         ))}
@@ -257,7 +258,7 @@ const LibrarianDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter((h:any) => !h.returnDate).map((h:any) => ({student: s, history: h}))).slice(0, 5).map(({student, history}: any) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.id}-${history.bookId}`}>
@@ -276,18 +277,19 @@ const LibrarianDashboard = () => {
 };
 
 const StudentDashboard = () => {
-  const { user, studentProfile } = useApp();
+  const { user } = useApp();
+  const studentProfile = user as Student;
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
   
-  if (!studentProfile) {
+  if (!studentProfile || user.role !== 'student') {
     return <div>Loading student data...</div>;
   }
 
-  const currentlyBorrowed = studentProfile.borrowHistory.filter((item) => !item.returnDate) || [];
+  const currentlyBorrowed = studentProfile.borrowHistory?.filter((item) => !item.returnDate) || [];
   const upcomingReturns = currentlyBorrowed
     .map(item => ({...item, book: books.find(b => b.id === item.bookId)}))
     .filter(item => item.book)
@@ -313,7 +315,7 @@ const StudentDashboard = () => {
                     <IndianRupee className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-destructive">₹{studentProfile.fines}</div>
+                    <div className="text-2xl font-bold text-destructive">₹{studentProfile.fines || 0}</div>
                     <p className="text-xs text-muted-foreground">Total amount due</p>
                 </CardContent>
             </Card>

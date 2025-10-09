@@ -44,7 +44,7 @@ const formSchema = z.object({
 })
 
 export function StudentInfoForm() {
-  const { authUser, firestore, setStudentProfile } = useApp();
+  const { authUser, firestore, setUser } = useApp();
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,7 +65,7 @@ export function StudentInfoForm() {
     try {
         const studentId = `2526${Math.floor(100000 + Math.random() * 900000)}`;
         const studentProfileData = {
-            id: authUser.uid,
+            uid: authUser.uid,
             studentId: studentId,
             name: values.fullName,
             email: authUser.email,
@@ -79,10 +79,10 @@ export function StudentInfoForm() {
             borrowHistory: []
         };
 
-        const studentDocRef = doc(firestore, "students", authUser.uid);
-        await setDoc(studentDocRef, studentProfileData);
+        const userDocRef = doc(firestore, "users", authUser.uid);
+        await setDoc(userDocRef, studentProfileData, { merge: true });
         
-        setStudentProfile(studentProfileData);
+        setUser(studentProfileData);
 
         toast({
             title: "Profile Saved!",
@@ -135,7 +135,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your department" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {Object.keys(departments).map(dep => (
@@ -158,7 +158,7 @@ export function StudentInfoForm() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your course" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {selectedDepartment && departments[selectedDepartment as keyof typeof departments].map(course => (

@@ -14,21 +14,18 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { books as initialBooks, users as initialUsers } from "@/lib/data";
+import { books as initialBooks } from "@/lib/data";
 import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 
 interface AppContextType {
-  role: Role;
-  setRole: (role: Role) => void;
   user: User;
+  setUser: (user: User) => void;
   authUser: FirebaseAuthUser | null;
-  studentProfile: Student | null;
-  setStudentProfile: (profile: Student | null) => void;
   loading: boolean;
   firestore: Firestore | null;
   books: Book[];
@@ -43,9 +40,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Default user object for when no one is logged in.
 const defaultUser: User = {
-    id: 'default',
+    uid: 'default',
     name: "Guest",
     email: "",
     role: "student",
@@ -53,13 +49,11 @@ const defaultUser: User = {
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<Role>("student");
+  const [user, setUser] = useState<User>(defaultUser);
   const [authUser, setAuthUser] = useState<FirebaseAuthUser | null>(null);
-  const [studentProfile, setStudentProfile] = useState<Student | null>(null);
-  const [nonStudentUser, setNonStudentUser] = useState<User | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
-  const [firebaseLoading, setFirebaseLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>(initialBooks);
   const router = useRouter();
   
@@ -72,54 +66,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setPersistence(au, browserLocalPersistence)
       .then(() => {
-        const unsubscribe = onAuthStateChanged(au, async (user) => {
-          if (user) {
-            setAuthUser(user);
-            
-            // Check if the user is a student
-            const studentDocRef = doc(fs, "students", user.uid);
-            const studentDoc = await getDoc(studentDocRef);
+        const unsubscribe = onAuthStateChanged(au, async (fbUser) => {
+          setLoading(true);
+          if (fbUser) {
+            setAuthUser(fbUser);
+            const userDocRef = doc(fs, "users", fbUser.uid);
+            const userDoc = await getDoc(userDocRef);
 
-            if (studentDoc.exists()) {
-              const profile = studentDoc.data() as Student;
-              setStudentProfile(profile);
-              setNonStudentUser(null);
-              setRoleState(profile.role);
+            if (userDoc.exists()) {
+              setUser(userDoc.data() as User);
             } else {
-              // Check if the user is a non-student (admin/librarian)
-              const staffUser = initialUsers.find(u => u.email === user.email);
-              if (staffUser) {
-                  setNonStudentUser(staffUser);
-                  setStudentProfile(null);
-                  setRoleState(staffUser.role);
-                  router.replace('/dashboard');
-              } else {
-                  // New user, potentially a student who needs to fill the form
-                  setStudentProfile(null);
-                  setNonStudentUser(null);
-                  setRoleState("student");
-              }
+              // New user, create a default student profile
+              const newUser: User = {
+                uid: fbUser.uid,
+                name: fbUser.displayName || "New User",
+                email: fbUser.email,
+                role: "student",
+                avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
+              };
+              await setDoc(userDocRef, newUser);
+              setUser(newUser);
             }
           } else {
             setAuthUser(null);
-            setStudentProfile(null);
-            setNonStudentUser(null);
-            setRoleState("student");
+            setUser(defaultUser);
+            router.push('/');
           }
-          setFirebaseLoading(false);
+          setLoading(false);
         });
         return () => unsubscribe();
       })
       .catch((error) => {
         console.error("Error setting auth persistence:", error);
         toast({ variant: "destructive", title: "Authentication Error", description: "Could not set session persistence." });
-        setFirebaseLoading(false);
+        setLoading(false);
       });
   }, [toast, router]);
 
-  const setRole = (newRole: Role) => {
-    setRoleState(newRole);
-  };
   
   const signInWithGoogle = async () => {
     if (!auth) return;
@@ -153,11 +136,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await auth.signOut();
       setAuthUser(null);
-      setStudentProfile(null);
-      setNonStudentUser(null);
-      setRoleState('student');
+      setUser(defaultUser);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      router.push('/');
     } catch(error: any) {
        console.error("Logout failed:", error);
        toast({ variant: "destructive", title: "Logout Failed", description: error.message });
@@ -165,7 +145,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
   
   const borrowBook = async (bookId: string) => {
-    if (!studentProfile || !firestore) {
+    const studentProfile = user as Student;
+    if (!studentProfile || user.role !== 'student' || !firestore) {
       toast({
         variant: "destructive",
         title: "Action Not Allowed",
@@ -194,22 +175,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       dueDate: formatISO(dueDate),
     };
 
-    const updatedHistory = [...studentProfile.borrowHistory, newBorrowItem];
+    const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
     const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory };
 
     try {
-      // Update book availability in local state
       const updatedBooks = books.map(b =>
         b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
       );
       setBooks(updatedBooks);
+      setUser(updatedProfile);
 
-      // Update student profile in local state
-      setStudentProfile(updatedProfile);
-
-      // Update student profile in Firestore
-      const studentDocRef = doc(firestore, "students", studentProfile.id);
-      await setDoc(studentDocRef, { borrowHistory: updatedHistory }, { merge: true });
+      const userDocRef = doc(firestore, "users", studentProfile.uid);
+      await setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true });
 
       toast({
         title: "Book Borrowed!",
@@ -223,14 +200,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
            title: "Uh oh! Something went wrong.",
            description: "Could not borrow the book. Please try again.",
        });
-       // Revert local state if firestore update fails
        setBooks(books);
-       setStudentProfile(studentProfile);
+       setUser(studentProfile);
     }
   };
 
   const returnBook = async (bookId: string) => {
-    if (!studentProfile || !firestore) return;
+    const studentProfile = user as Student;
+    if (!studentProfile || user.role !== 'student' || !firestore) return;
 
     const bookToReturn = books.find(b => b.id === bookId);
     if (!bookToReturn) return;
@@ -238,7 +215,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let fine = 0;
     const today = new Date();
     
-    const updatedHistory = studentProfile.borrowHistory.map(item => {
+    const updatedHistory = (studentProfile.borrowHistory || []).map(item => {
         if (item.bookId === bookId && !item.returnDate) {
             const dueDate = new Date(item.dueDate);
             const daysOverdue = differenceInDays(today, dueDate);
@@ -259,10 +236,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             b.id === bookId ? { ...b, availableCopies: b.availableCopies + 1 } : b
         );
         setBooks(updatedBooks);
-        setStudentProfile(updatedProfile);
+        setUser(updatedProfile);
 
-        const studentDocRef = doc(firestore, "students", studentProfile.id);
-        await setDoc(studentDocRef, updatedProfile, { merge: true });
+        const userDocRef = doc(firestore, "users", studentProfile.uid);
+        await setDoc(userDocRef, updatedProfile, { merge: true });
         
         toast({
             title: `Book "${bookToReturn.title}" Returned`,
@@ -276,23 +253,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             title: "Return Failed",
             description: "Could not process the book return. Please try again."
         });
-        // Revert local state
         setBooks(books);
-        setStudentProfile(studentProfile);
+        setUser(studentProfile);
     }
   };
   
-  const loading = firebaseLoading;
-  const currentUser = studentProfile || nonStudentUser || defaultUser;
 
   return (
     <AppContext.Provider value={{
-        role,
-        setRole,
-        user: currentUser,
+        user,
+        setUser,
         authUser,
-        studentProfile,
-        setStudentProfile,
         loading,
         firestore,
         books,
@@ -315,5 +286,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    

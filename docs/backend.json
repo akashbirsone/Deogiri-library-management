@@ -6,7 +6,7 @@
       "description": "A generic user of the library.",
       "type": "object",
       "properties": {
-        "id": {
+        "uid": {
           "type": "string",
           "description": "The unique identifier for the user, same as their auth UID."
         },
@@ -28,49 +28,40 @@
           "type": "string",
           "format": "uri",
           "description": "A URL to the user's profile picture."
-        }
-      },
-      "required": ["id", "name", "email", "role"]
-    },
-    "student": {
-      "title": "Student",
-      "description": "A student user of the library, extends the base User entity.",
-      "type": "object",
-      "allOf": [{ "$ref": "#/entities/user" }],
-      "properties": {
+        },
         "studentId": {
           "type": "string",
-          "description": "The formatted student ID, e.g., 2526123456."
+          "description": "The formatted student ID, e.g., 2526123456. Only for students."
         },
         "department": {
           "type": "string",
-          "description": "The academic department of the student."
+          "description": "The academic department of the student. Only for students."
         },
         "course": {
           "type": "string",
-          "description": "The course the student is enrolled in."
+          "description": "The course the student is enrolled in. Only for students."
         },
         "contactNumber": {
           "type": "string",
-          "description": "The student's 10-digit contact number."
+          "description": "The student's 10-digit contact number. Only for students."
         },
         "yearOfStudy": {
           "type": "string",
-          "description": "The student's current year of study."
+          "description": "The student's current year of study. Only for students."
         },
         "fines": {
           "type": "number",
-          "description": "The total amount of outstanding fines in INR."
+          "description": "The total amount of outstanding fines in INR. Only for students."
         },
         "borrowHistory": {
           "type": "array",
           "items": {
             "$ref": "#/entities/borrowedItem"
           },
-          "description": "An array of items the student has borrowed."
+          "description": "An array of items the student has borrowed. Only for students."
         }
       },
-      "required": ["studentId", "department", "course", "contactNumber", "yearOfStudy"]
+      "required": ["uid", "name", "email", "role"]
     },
     "book": {
       "title": "Book",
@@ -109,11 +100,11 @@
     "providers": ["Email/Password", "Google", "GitHub"]
   },
   "firestore": {
-    "/students/{studentId}": {
+    "/users/{userId}": {
       "schema": {
-        "$ref": "#/entities/student"
+        "$ref": "#/entities/user"
       },
-      "description": "Stores the public profile information for each student user."
+      "description": "Stores the profile information for all users (students, librarians, admins)."
     },
     "/books/{bookId}": {
       "schema": {

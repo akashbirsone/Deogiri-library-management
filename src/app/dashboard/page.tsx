@@ -44,7 +44,7 @@ import { Button } from "@/components/ui/button"
 type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings" | "help";
 
 function PageContent() {
-  const { role, logout } = useApp()
+  const { user, logout } = useApp()
   const { setOpenMobile } = useSidebar();
   const [activeView, setActiveView] = React.useState<View>("dashboard")
 
@@ -109,7 +109,7 @@ function PageContent() {
         <SidebarContent>
           <SidebarMenu>
             {navigationItems.map((item) =>
-              !item.roles || item.roles.includes(role) ? (
+              !item.roles || item.roles.includes(user.role) ? (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
                     onClick={() => handleViewChange(item.name as View)}

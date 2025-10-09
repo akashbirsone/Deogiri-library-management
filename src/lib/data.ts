@@ -1,77 +1,30 @@
 
 import type { Book, User, Student } from "@/types";
 
-export const users: (User | Student)[] = [
+export const users: User[] = [
   {
-    id: "user-1",
+    uid: "admin-user-id", // Replace with actual UID from Firebase Auth
     name: "Admin",
-    email: "Deogiri_admin",
+    email: "deogiri_admin@yourapp.com",
     role: "admin",
     avatar: "https://i.pravatar.cc/150?u=admin",
   },
   {
-    id: "user-2",
+    uid: "librarian1-user-id", // Replace with actual UID from Firebase Auth
     name: "Librarian 1",
-    email: "librarian1",
+    email: "librarian1@yourapp.com",
     role: "librarian",
     avatar: "https://i.pravatar.cc/150?u=librarian1",
   },
   {
-    id: "user-6",
+    uid: "librarian2-user-id", // Replace with actual UID from Firebase Auth
     name: "Librarian 2",
-    email: "librarian2",
+    email: "librarian2@yourapp.com",
     role: "librarian",
     avatar: "https://i.pravatar.cc/150?u=librarian2",
   },
-  {
-      id: "user-3",
-      studentId: "2526123456",
-      name: "Student User",
-      email: "student@deogiri.ac.in",
-      role: "student",
-      avatar: "https://i.pravatar.cc/150?u=student",
-      fines: 15,
-      department: "Faculty of Science & I.T.",
-      course: "B.Sc. CS",
-      contactNumber: "9876543210",
-      yearOfStudy: "2nd",
-      borrowHistory: [
-          { bookId: "book-1", borrowDate: "2024-04-01", returnDate: "2024-04-15", dueDate: "2024-04-14", fine: 10 },
-          { bookId: "book-2", borrowDate: "2024-05-10", dueDate: "2024-05-24" },
-          { bookId: "book-5", borrowDate: "2024-03-20", returnDate: "2024-04-02", dueDate: "2024-04-03" },
-      ]
-  },
-  {
-      id: "user-4",
-      studentId: "2526789012",
-      name: "Jane Doe",
-      email: "jane.d@deogiri.ac.in",
-      role: "student",
-      avatar: "https://i.pravatar.cc/150?u=jane",
-      fines: 0,
-      department: "Faculty of Commerce & Management",
-      course: "BBA",
-      contactNumber: "9876543211",
-      yearOfStudy: "1st",
-      borrowHistory: [
-          { bookId: "book-3", borrowDate: "2024-05-01", dueDate: "2024-05-15" },
-      ]
-  },
-   {
-      id: "user-5",
-      studentId: "2526345678",
-      name: "John Smith",
-      email: "john.s@deogiri.ac.in",
-      role: "student",
-      avatar: "https://i.pravatar.cc/150?u=john",
-      fines: 0,
-      department: "Faculty of Arts & Social Science",
-      course: "BA",
-      contactNumber: "9876543212",
-      yearOfStudy: "3rd",
-      borrowHistory: []
-  },
 ];
+
 
 export const books: Book[] = [
   {

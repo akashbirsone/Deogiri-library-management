@@ -2,11 +2,18 @@
 export type Role = "admin" | "librarian" | "student";
 
 export interface User {
-  id: string;
+  uid: string;
   name: string;
   email: string | null;
   role: Role;
   avatar: string;
+  studentId?: string;
+  department?: string;
+  course?: string;
+  contactNumber?: string;
+  yearOfStudy?: string;
+  borrowHistory?: BorrowHistoryItem[];
+  fines?: number;
 }
 
 export interface Book {
@@ -41,5 +48,3 @@ export interface Student extends User {
   borrowHistory: BorrowHistoryItem[];
   fines: number;
 }
-
-    
