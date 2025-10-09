@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -15,10 +16,11 @@ export function UsersView() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const filteredUsers = users.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
   const getInitials = (name: string) => {
+    if (!name) return "";
     const names = name.split(" ")
     return names
       .map((n) => n[0])
@@ -52,7 +54,7 @@ export function UsersView() {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.uid}>
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <Avatar>
