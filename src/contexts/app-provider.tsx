@@ -76,11 +76,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
+              // This case handles brand new users signing up.
               const newUser: User = {
                 uid: fbUser.uid,
                 name: fbUser.displayName || "New User",
                 email: fbUser.email,
-                role: "student",
+                role: "student", // Default role for new sign-ups
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
               };
                setDoc(userDocRef, newUser, { merge: true })
@@ -99,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAuthUser(null);
             setUser(null);
+             // When logging out, ensure we are on the home page.
             if (window.location.pathname !== '/') {
               router.push('/');
             }
@@ -120,9 +122,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUsers([]);
         return;
     };
+    
+    // All authenticated users can listen to books.
     const booksCollection = collection(firestore, 'books');
-    const usersCollection = collection(firestore, 'users');
-
     const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
         const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
         setBooks(booksData);
@@ -131,13 +133,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         errorEmitter.emit('permission-error', permissionError);
     });
 
-    const unsubUsers = onSnapshot(usersCollection, (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as User));
-        setUsers(usersData);
-    }, async (error) => {
-        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    let unsubUsers = () => {};
+    // Only admins and librarians should listen to the users collection.
+    if (user.role === 'admin' || user.role === 'librarian') {
+        const usersCollection = collection(firestore, 'users');
+        unsubUsers = onSnapshot(usersCollection, (snapshot) => {
+            const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as User));
+            setUsers(usersData);
+        }, async (error) => {
+            const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    }
+
 
     return () => {
         unsubBooks();
@@ -182,6 +190,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await auth.signOut();
       setAuthUser(null);
       setUser(null);
+      setUsers([]); // Clear user list on logout
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch(error: any) {
        console.error("Logout failed:", error);
@@ -382,5 +391,4 @@ export const useApp = () => {
   return context;
 };
 
-    
     
