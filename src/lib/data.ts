@@ -1,6 +1,10 @@
 
 import type { Book, User, Student } from "@/types";
 
+// This file is now used as a fallback or for initial structure, 
+// but the primary data source is Firestore.
+// The user data here ensures default users are available for demonstration.
+
 export const users: User[] = [
   {
     uid: "Dzl57IC8VjVuwXwQwgNgHxssz3u2",
@@ -16,118 +20,9 @@ export const users: User[] = [
     role: "librarian",
     avatar: "https://i.pravatar.cc/150?u=librarian1",
   },
-  {
-    uid: "librarian2-user-id",
-    name: "Librarian 2",
-    email: "librarian2@yourapp.com",
-    role: "librarian",
-    avatar: "https://i.pravatar.cc/150?u=librarian2",
-  },
 ];
 
 
-export const books: Book[] = [
-  {
-    id: "book-1",
-    title: "To Kill a Mockingbird",
-    author: "Harper Lee",
-    isbn: "978-0-06-112008-4",
-    category: "Classic",
-    department: "BA",
-    publicationYear: 1960,
-    totalCopies: 5,
-    availableCopies: 2,
-    coverImage: "https://picsum.photos/seed/book1/300/450",
-    coverImageHint: "book cover",
-  },
-  {
-    id: "book-2",
-    title: "Dune",
-    author: "Frank Herbert",
-    isbn: "978-0-441-01359-3",
-    category: "Sci-Fi",
-    department: "BCS.IT",
-    publicationYear: 1965,
-    totalCopies: 8,
-    availableCopies: 5,
-    coverImage: "https://picsum.photos/seed/book2/300/450",
-    coverImageHint: "space stars",
-  },
-  {
-    id: "book-3",
-    title: "A Game of Thrones",
-    author: "George R.R. Martin",
-    isbn: "978-0-553-10354-0",
-    category: "Fantasy",
-    department: "BA",
-    publicationYear: 1996,
-    totalCopies: 10,
-    availableCopies: 0,
-    coverImage: "https://picsum.photos/seed/book3/300/450",
-    coverImageHint: "fantasy dragon",
-  },
-  {
-    id: "book-4",
-    title: "The Hound of the Baskervilles",
-    author: "Arthur Conan Doyle",
-    isbn: "978-0-140-43786-6",
-    category: "Mystery",
-    department: "BA",
-    publicationYear: 1902,
-    totalCopies: 3,
-    availableCopies: 3,
-    coverImage: "https://picsum.photos/seed/book4/300/450",
-    coverImageHint: "mystery clue",
-  },
-  {
-    id: "book-5",
-    title: "Sapiens: A Brief History of Humankind",
-    author: "Yuval Noah Harari",
-    isbn: "978-0-06-231609-7",
-    category: "History",
-    department: "B.COM",
-    publicationYear: 2011,
-    totalCopies: 6,
-    availableCopies: 4,
-    coverImage: "https://picsum.photos/seed/book5/300/450",
-    coverImageHint: "history scroll",
-  },
-  {
-    id: "book-6",
-    title: "Steve Jobs",
-    author: "Walter Isaacson",
-    isbn: "978-1-4516-4853-9",
-    category: "Biography",
-    department: "BCA",
-    publicationYear: 2011,
-    totalCopies: 4,
-    availableCopies: 1,
-    coverImage: "https://picsum.photos/seed/book6/300/450",
-    coverImageHint: "person portrait",
-  },
-  {
-    id: "book-7",
-    title: "The Very Hungry Caterpillar",
-    author: "Eric Carle",
-    isbn: "978-0-399-22690-8",
-    category: "Children",
-    publicationYear: 1969,
-    totalCopies: 12,
-    availableCopies: 12,
-    coverImage: "https://picsum.photos/seed/book7/300/450",
-    coverImageHint: "cartoon animal",
-  },
-  {
-    id: "book-8",
-    title: "Pride and Prejudice",
-    author: "Jane Austen",
-    isbn: "978-0-141-43951-8",
-    category: "Romance",
-    department: "BA",
-    publicationYear: 1813,
-    totalCopies: 7,
-    availableCopies: 7,
-    coverImage: "https://picsum.photos/seed/book8/300/450",
-    coverImageHint: "couple heart",
-  },
-];
+export const books: Book[] = []; // This will be populated from Firestore
+
+    

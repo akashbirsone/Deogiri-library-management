@@ -14,11 +14,10 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { books as initialBooks } from "@/lib/data";
 import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -31,6 +30,7 @@ interface AppContextType {
   loading: boolean;
   firestore: Firestore | null;
   books: Book[];
+  users: User[];
   
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
@@ -38,6 +38,11 @@ interface AppContextType {
   logout: () => Promise<void>;
   borrowBook: (bookId: string) => Promise<void>;
   returnBook: (bookId: string) => Promise<void>;
+  addBook: (book: Omit<Book, 'id'>) => Promise<void>;
+  updateBook: (book: Book) => Promise<void>;
+  deleteBook: (bookId: string) => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -48,7 +53,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>(initialBooks);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
   
   const { toast } = useToast();
@@ -61,7 +67,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPersistence(au, browserLocalPersistence)
       .then(() => {
         const unsubscribe = onAuthStateChanged(au, async (fbUser) => {
-          setLoading(true);
           if (fbUser) {
             setAuthUser(fbUser);
             const userDocRef = doc(fs, "users", fbUser.uid);
@@ -70,7 +75,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               setUser(userDoc.data() as User);
             } else {
-              // This is a new user (likely via social login). Create a default student profile.
               const newUser: User = {
                 uid: fbUser.uid,
                 name: fbUser.displayName || "New User",
@@ -107,6 +111,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
   }, [toast, router]);
 
+  useEffect(() => {
+    if (!firestore) return;
+    const booksCollection = collection(firestore, 'books');
+    const usersCollection = collection(firestore, 'users');
+
+    const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
+        const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
+        setBooks(booksData);
+    }, (error) => {
+        console.error("Error fetching books:", error);
+    });
+
+    const unsubUsers = onSnapshot(usersCollection, (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as User));
+        setUsers(usersData);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+    });
+
+    return () => {
+        unsubBooks();
+        unsubUsers();
+    };
+  }, [firestore]);
   
   const signInWithGoogle = async () => {
     if (!auth) return;
@@ -185,10 +213,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true })
       .then(() => {
-        const updatedBooks = books.map(b =>
-          b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
-        );
-        setBooks(updatedBooks);
+        const bookDocRef = doc(firestore, "books", bookId);
+        setDoc(bookDocRef, { availableCopies: bookToBorrow.availableCopies - 1 }, { merge: true });
+
         setUser(updatedProfile);
   
         toast({
@@ -242,10 +269,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     setDoc(userDocRef, { borrowHistory: updatedHistory, fines: totalFines }, { merge: true })
       .then(() => {
-        const updatedBooks = books.map(b => 
-            b.id === bookId ? { ...b, availableCopies: b.availableCopies + 1 } : b
-        );
-        setBooks(updatedBooks);
+        const bookDocRef = doc(firestore, "books", bookId);
+        setDoc(bookDocRef, { availableCopies: bookToReturn.availableCopies + 1 }, { merge: true });
+
         setUser(updatedProfile);
         
         toast({
@@ -270,6 +296,52 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
   
+    const addBook = async (book: Omit<Book, 'id'>) => {
+        if (!firestore) return;
+        const booksCollection = collection(firestore, 'books');
+        addDoc(booksCollection, book).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: 'books', operation: 'create', requestResourceData: book });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const updateBook = async (book: Book) => {
+        if (!firestore) return;
+        const { id, ...bookData } = book;
+        const bookDoc = doc(firestore, 'books', id);
+        setDoc(bookDoc, bookData, { merge: true }).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: bookDoc.path, operation: 'update', requestResourceData: bookData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const deleteBook = async (bookId: string) => {
+        if (!firestore) return;
+        const bookDoc = doc(firestore, 'books', bookId);
+        deleteDoc(bookDoc).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: bookDoc.path, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const updateUser = async (userToUpdate: User) => {
+        if (!firestore) return;
+        const userDoc = doc(firestore, 'users', userToUpdate.uid);
+        setDoc(userDoc, userToUpdate, { merge: true }).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: userDoc.path, operation: 'update', requestResourceData: userToUpdate });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const deleteUser = async (userId: string) => {
+        if (!firestore) return;
+        const userDoc = doc(firestore, 'users', userId);
+        deleteDoc(userDoc).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: userDoc.path, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
 
   return (
     <AppContext.Provider value={{
@@ -279,12 +351,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         loading,
         firestore,
         books,
+        users,
         signInWithGoogle,
         signInWithGithub,
         emailLogin,
         logout,
         borrowBook,
         returnBook,
+        addBook,
+        updateBook,
+        deleteBook,
+        updateUser,
+        deleteUser
     }}>
       {children}
     </AppContext.Provider>
@@ -298,3 +376,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    

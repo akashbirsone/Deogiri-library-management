@@ -3,9 +3,8 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, History, CalendarClock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { books, users } from "@/lib/data";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, formatDistanceToNow } from "date-fns";
@@ -16,6 +15,10 @@ import type { Student } from "@/types";
 
 export function DashboardView() {
   const { user } = useApp();
+
+  if (!user) {
+    return <div className="text-center py-16">Loading dashboard...</div>;
+  }
 
   switch (user.role) {
     case "admin":
@@ -30,10 +33,11 @@ export function DashboardView() {
 }
 
 const AdminDashboard = () => {
+    const { books, users } = useApp();
     const totalBooks = books.length;
     const borrowedBooksCount = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
     const totalStudents = users.filter(u => u.role === 'student').length;
-    const totalFines = (users.filter(u => u.role === 'student') as any[]).reduce((acc, student) => acc + (student.fines || 0), 0);
+    const totalFines = (users.filter(u => u.role === 'student') as Student[]).reduce((acc, student) => acc + (student.fines || 0), 0);
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
@@ -127,10 +131,10 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter((h:any) => !h.returnDate).map((h:any) => ({student: s, history: h}))).slice(0, 5).map(({student, history}: any) => {
+                        {(users.filter(u => u.role === 'student') as Student[]).flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
-                                <TableRow key={`${student.id}-${history.bookId}`}>
+                                <TableRow key={`${student.uid}-${history.bookId}`}>
                                     <TableCell>{book?.title}</TableCell>
                                     <TableCell>{student.name}</TableCell>
                                     <TableCell>{isClient ? format(new Date(history.dueDate), "PPP") : ''}</TableCell>
@@ -159,8 +163,8 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as any[]).map(student => (
-                            <TableRow key={student.id}>
+                        {(users.filter(u => u.role === 'student') as Student[]).map(student => (
+                            <TableRow key={student.uid}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="w-8 h-8">
@@ -175,8 +179,8 @@ const AdminDashboard = () => {
                                 </TableCell>
                                 <TableCell>{student.department}</TableCell>
                                 <TableCell>{student.course}</TableCell>
-                                <TableCell className="font-medium">{student.borrowHistory.filter((h:any) => !h.returnDate).length}</TableCell>
-                                <TableCell className="text-right font-medium">₹{student.fines}</TableCell>
+                                <TableCell className="font-medium">{(student.borrowHistory || []).filter(h => !h.returnDate).length}</TableCell>
+                                <TableCell className="text-right font-medium">₹{student.fines || 0}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -189,6 +193,7 @@ const AdminDashboard = () => {
 };
 
 const LibrarianDashboard = () => {
+    const { books } = useApp();
     const totalBooks = books.reduce((acc, book) => acc + book.totalCopies, 0);
     const borrowedBooks = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
     const availableBooks = totalBooks - borrowedBooks;
@@ -258,10 +263,10 @@ const LibrarianDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as any[]).flatMap(s => s.borrowHistory.filter((h:any) => !h.returnDate).map((h:any) => ({student: s, history: h}))).slice(0, 5).map(({student, history}: any) => {
+                        {(useApp().users.filter(u => u.role === 'student') as Student[]).flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
-                                <TableRow key={`${student.id}-${history.bookId}`}>
+                                <TableRow key={`${student.uid}-${history.bookId}`}>
                                     <TableCell>{book?.title}</TableCell>
                                     <TableCell>{student.name}</TableCell>
                                     <TableCell>{isClient ? format(new Date(history.dueDate), "PPP") : ''}</TableCell>
@@ -277,7 +282,7 @@ const LibrarianDashboard = () => {
 };
 
 const StudentDashboard = () => {
-  const { user } = useApp();
+  const { user, books } = useApp();
   const studentProfile = user as Student;
   const [isClient, setIsClient] = React.useState(false);
 
@@ -285,7 +290,7 @@ const StudentDashboard = () => {
     setIsClient(true);
   }, []);
   
-  if (!studentProfile || user.role !== 'student') {
+  if (!studentProfile || user?.role !== 'student') {
     return <div>Loading student data...</div>;
   }
 
@@ -383,3 +388,5 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    

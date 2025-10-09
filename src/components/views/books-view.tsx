@@ -3,7 +3,6 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { books as allBooks } from "@/lib/data";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,29 +21,39 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 export function BooksView() {
-    const { role, borrowBook } = useApp();
+    const { user, books, borrowBook, addBook, updateBook, deleteBook } = useApp();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [category, setCategory] = React.useState("all");
     const [department, setDepartment] = React.useState("all");
-    const [bookList, setBookList] = React.useState(allBooks);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingBook, setEditingBook] = React.useState<BookType | null>(null);
+    const { toast } = useToast();
 
-    const handleAddBook = (newBook: BookType) => {
-        if (editingBook) {
-            setBookList(bookList.map(b => b.id === newBook.id ? newBook : b));
+    const handleFormSubmit = (bookData: Partial<BookType>) => {
+        if (editingBook && 'id' in editingBook) {
+            updateBook({ ...editingBook, ...bookData });
+            toast({ title: "Book Updated", description: `${bookData.title} has been updated.`});
         } else {
-            setBookList([...bookList, { ...newBook, id: `book-${Date.now()}` }]);
+            const newBook = {
+                ...bookData,
+                publicationYear: Number(bookData.publicationYear),
+                totalCopies: Number(bookData.totalCopies),
+                availableCopies: Number(bookData.totalCopies),
+            } as Omit<BookType, 'id'>;
+            addBook(newBook);
+            toast({ title: "Book Added", description: `${bookData.title} has been added to the catalog.`});
         }
+        setIsFormOpen(false);
+        setEditingBook(null);
     };
 
     const handleEditBook = (book: BookType) => {
@@ -53,7 +62,8 @@ export function BooksView() {
     };
 
     const handleDeleteBook = (bookId: string) => {
-        setBookList(bookList.filter(b => b.id !== bookId));
+        deleteBook(bookId);
+        toast({ title: "Book Deleted", variant: "destructive" });
     };
     
     const openAddBookForm = () => {
@@ -61,7 +71,7 @@ export function BooksView() {
         setIsFormOpen(true);
     }
 
-    const filteredBooks = bookList.filter(book => {
+    const filteredBooks = books.filter(book => {
         const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               book.author.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = category === 'all' || book.category === category;
@@ -69,15 +79,15 @@ export function BooksView() {
         return matchesSearch && matchesCategory && matchesDepartment;
     });
     
-    const categories = ['all', ...Array.from(new Set(allBooks.map(b => b.category)))];
-    const departments = ['all', ...Array.from(new Set(allBooks.map(b => b.department).filter(Boolean))) as string[]];
+    const allCategories = ['all', ...Array.from(new Set(books.map(b => b.category)))];
+    const allDepartments = ['all', ...Array.from(new Set(books.map(b => b.department).filter(Boolean))) as string[]];
 
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight">Book Catalog</h1>
-        {(role === 'admin' || role === 'librarian') && (
+        {(user?.role === 'admin' || user?.role === 'librarian') && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
                     <Button onClick={openAddBookForm}>
@@ -86,7 +96,7 @@ export function BooksView() {
                     </Button>
                 </DialogTrigger>
                 <BookForm 
-                    onSubmit={handleAddBook} 
+                    onSubmit={handleFormSubmit} 
                     onClose={() => setIsFormOpen(false)}
                     book={editingBook}
                 />
@@ -110,7 +120,7 @@ export function BooksView() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Departments</SelectItem>
-                            {departments.filter(d => d !== 'all').map(dep => (
+                            {allDepartments.filter(d => d !== 'all').map(dep => (
                                 <SelectItem key={dep} value={dep} className="capitalize">
                                     {dep}
                                 </SelectItem>
@@ -126,7 +136,7 @@ export function BooksView() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Categories</SelectItem>
-                            {categories.filter(c => c !== 'all').map(cat => (
+                            {allCategories.filter(c => c !== 'all').map(cat => (
                                 <SelectItem key={cat} value={cat} className="capitalize">
                                     {cat}
                                 </SelectItem>
@@ -157,7 +167,7 @@ export function BooksView() {
 
 
 function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit: (book: BookType) => void; onDelete: (bookId: string) => void; onBorrow: () => void; }) {
-  const { role } = useApp();
+  const { user } = useApp();
   
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
@@ -173,7 +183,7 @@ function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit
         <Badge className="absolute top-2 left-2" variant={book.availableCopies > 0 ? 'secondary' : 'destructive'}>
           {book.availableCopies > 0 ? 'Available' : 'Borrowed'}
         </Badge>
-        {(role === 'admin' || role === 'librarian') && (
+        {(user?.role === 'admin' || user?.role === 'librarian') && (
             <div className="absolute top-2 right-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -205,7 +215,7 @@ function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit
         <p className="text-xs text-muted-foreground mt-2">ISBN: {book.isbn}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" disabled={book.availableCopies === 0} onClick={onBorrow}>
+        <Button className="w-full" disabled={book.availableCopies === 0 || user?.role !== 'student'} onClick={onBorrow}>
           {book.availableCopies > 0 ? 'Borrow Book' : 'Unavailable'}
         </Button>
       </CardFooter>
@@ -213,7 +223,7 @@ function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit
   );
 }
 
-const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: BookType) => void; onClose: () => void; book: BookType | null }) => {
+const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookType>) => void; onClose: () => void; book: BookType | null }) => {
     const [formData, setFormData] = React.useState<Partial<BookType>>(
         book || {
             title: '',
@@ -223,21 +233,32 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: BookType) => v
             department: '',
             publicationYear: new Date().getFullYear(),
             totalCopies: 1,
-            availableCopies: 1,
             coverImage: 'https://picsum.photos/seed/newbook/300/450',
             coverImageHint: 'book cover'
         }
     );
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+    React.useEffect(() => {
+        if (book) {
+            setFormData(book);
+        } else {
+             setFormData({
+                title: '', author: '', isbn: '', category: '', department: '',
+                publicationYear: new Date().getFullYear(), totalCopies: 1,
+                coverImage: `https://picsum.photos/seed/${Date.now()}/300/450`,
+                coverImageHint: 'book cover'
+            });
+        }
+    }, [book]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type } = e.target;
+        setFormData({ ...formData, [name]: type === 'number' ? Number(value) : value });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData as BookType);
-        onClose();
+        onSubmit(formData);
     };
 
     return (
@@ -266,13 +287,17 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: BookType) => v
                     <Label htmlFor="department" className="text-right">Department</Label>
                     <Input id="department" name="department" value={formData.department} onChange={handleChange} className="col-span-3" />
                 </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="publicationYear" className="text-right">Year</Label>
+                    <Input id="publicationYear" name="publicationYear" type="number" value={formData.publicationYear} onChange={handleChange} className="col-span-3" required />
+                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="totalCopies" className="text-right">Total Copies</Label>
                     <Input id="totalCopies" name="totalCopies" type="number" value={formData.totalCopies} onChange={handleChange} className="col-span-3" required />
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">Cancel</Button>
+                        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                     </DialogClose>
                     <Button type="submit">Save</Button>
                 </DialogFooter>
