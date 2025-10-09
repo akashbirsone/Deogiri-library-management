@@ -3,21 +3,21 @@ import type { Book, User, Student } from "@/types";
 
 export const users: User[] = [
   {
-    uid: "admin-user-id", // Replace with actual UID from Firebase Auth
-    name: "Admin",
-    email: "deogiri_admin@yourapp.com",
+    uid: "Dzl57IC8VjVuwXwQwgNgHxssz3u2",
+    name: "Deogiri Admin",
+    email: "deogiri_admin@college.com",
     role: "admin",
     avatar: "https://i.pravatar.cc/150?u=admin",
   },
   {
-    uid: "librarian1-user-id", // Replace with actual UID from Firebase Auth
+    uid: "librarian1-user-id",
     name: "Librarian 1",
     email: "librarian1@yourapp.com",
     role: "librarian",
     avatar: "https://i.pravatar.cc/150?u=librarian1",
   },
   {
-    uid: "librarian2-user-id", // Replace with actual UID from Firebase Auth
+    uid: "librarian2-user-id",
     name: "Librarian 2",
     email: "librarian2@yourapp.com",
     role: "librarian",
