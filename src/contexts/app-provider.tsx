@@ -115,7 +115,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [toast, router]);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || !user) {
+        setBooks([]);
+        setUsers([]);
+        return;
+    };
     const booksCollection = collection(firestore, 'books');
     const usersCollection = collection(firestore, 'users');
 
@@ -139,7 +143,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         unsubBooks();
         unsubUsers();
     };
-  }, [firestore]);
+  }, [firestore, user]);
   
   const signInWithGoogle = async () => {
     if (!auth) return;
@@ -235,11 +239,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
       })
       .catch(async (error) => {
-         // This could be from either setDoc. A more robust implementation might check which one failed.
+          const isUserDocError = error.message.includes("users");
           const permissionError = new FirestorePermissionError({
-            path: error.message.includes("users") ? userDocRef.path : bookDocRef.path,
+            path: isUserDocError ? userDocRef.path : bookDocRef.path,
             operation: 'update',
-            requestResourceData: error.message.includes("users") ? { borrowHistory: updatedHistory } : bookUpdateData,
+            requestResourceData: isUserDocError ? { borrowHistory: updatedHistory } : bookUpdateData,
           });
           errorEmitter.emit('permission-error', permissionError);
       });
@@ -378,4 +382,5 @@ export const useApp = () => {
   return context;
 };
 
+    
     
