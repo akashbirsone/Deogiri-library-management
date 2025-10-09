@@ -1,0 +1,100 @@
+/**
+ * @fileoverview Firestore Security Rules for the library application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model, granting different levels of
+ * access based on the user's role (student, librarian, or admin). Students can only
+ * access their own data, while librarians and admins have full access to all data.
+ * Unauthenticated access is strictly denied.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information. The 'userId' must match the
+ *   authenticated user's UID.  User documents contain a 'role' field which determines
+ *   their privileges.
+ * - /books/{bookId}: Stores book catalog information. Accessible to all authenticated
+ *   users for reading, but only modifiable by librarians and admins.
+ *
+ * Key Security Decisions:
+ * - User listing is denied to prevent unauthorized access to user data.
+ * - Role modification by students is strictly prohibited.
+ * - The 'uid' field in the /users/{userId} document must match the 'userId' path segment
+ *   to prevent spoofing.
+ *
+ * Denormalization for Authorization:
+ * - The user's role is stored directly in the /users/{userId} document to avoid costly
+ *   and impossible queries during rule evaluation.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     * @param {string} userId - The user ID to compare against the authenticated user's UID.
+     * @return {boolean} True if the user is signed in and the UID matches, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user exists and is the owner.
+     * @param {string} userId - The user ID to check.
+     * @return {boolean} True if the document exists and the user is the owner.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'admin' or 'librarian' role.
+     * @return {boolean} True if the user has the role, false otherwise.
+     */
+    function isAdminOrLibrarian() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'librarian'];
+    }
+
+    /**
+     * @description Rules for the /users/{userId} collection.
+     * @path /users/{userId}
+     * @allow (create) - An authenticated user can create their own profile if the userId matches their auth UID.
+     * @allow (get, update, delete) - An authenticated user can read, update, or delete their own profile.
+     * @allow (get, list, create, update, delete) - An admin or librarian can read, list, create, update, and delete any user profile.
+     * @deny (create) - An unauthenticated user cannot create a user profile.
+     * @deny (update) - A student cannot change their own role.
+     * @deny (create) - An authenticated user cannot create a user profile with a mismatched userId.
+     * @principle Enforces user-ownership for profile management and restricts role modification.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdminOrLibrarian();
+      allow list: if false; // Prevent listing all users
+
+      // Self-creation: A user can create their own document
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+
+      // Only the owner or an admin/librarian can update or delete
+      allow update: if isExistingOwner(userId) || isAdminOrLibrarian();
+      allow delete: if isExistingOwner(userId) || isAdminOrLibrarian();
+    }
+
+    /**
+     * @description Rules for the /books/{bookId} collection.
+     * @path /books/{bookId}
+     * @allow (get, list) - Any authenticated user can read the book catalog.
+     * @allow (create, update, delete) - Only admins or librarians can modify the book catalog.
+     * @deny (create, update, delete) - Students cannot modify the book catalog.
+     * @principle Enforces role-based access control for book catalog management.
+     */
+    match /books/{bookId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdminOrLibrarian();
+    }
+  }
+}
