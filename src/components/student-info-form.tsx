@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Library } from "lucide-react"
+import { ArrowLeft, Library } from "lucide-react"
 import { useApp } from "@/contexts/app-provider"
 import { useToast } from "@/hooks/use-toast"
 import { doc, setDoc } from "firebase/firestore"
@@ -47,7 +47,7 @@ const formSchema = z.object({
 })
 
 export function StudentInfoForm() {
-  const { authUser, firestore, setUser } = useApp();
+  const { authUser, firestore, setUser, logout } = useApp();
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,11 +106,24 @@ export function StudentInfoForm() {
           });
       });
   }
+  
+  const handleBack = () => {
+    logout();
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/50 p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-lg relative">
+         <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 left-4 text-muted-foreground"
+            onClick={handleBack}
+            aria-label="Back to login"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        <CardHeader className="text-center pt-12">
             <div className="flex justify-center items-center mb-2">
                 <Library className="h-8 w-8 mr-2" />
                 <CardTitle className="text-2xl font-headline">Complete Your Profile</CardTitle>
