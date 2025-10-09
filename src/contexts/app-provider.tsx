@@ -67,6 +67,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPersistence(au, browserLocalPersistence)
       .then(() => {
         const unsubscribe = onAuthStateChanged(au, async (fbUser) => {
+          setLoading(true);
           if (fbUser) {
             setAuthUser(fbUser);
             const userDocRef = doc(fs, "users", fbUser.uid);
@@ -376,5 +377,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
