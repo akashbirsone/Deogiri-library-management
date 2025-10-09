@@ -21,10 +21,12 @@ import { useToast } from "@/hooks/use-toast";
 import { books as initialBooks } from "@/lib/data";
 import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 interface AppContextType {
-  user: User;
-  setUser: (user: User) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
   authUser: FirebaseAuthUser | null;
   loading: boolean;
   firestore: Firestore | null;
@@ -40,16 +42,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const defaultUser: User = {
-    uid: 'default',
-    name: "Guest",
-    email: "",
-    role: "student",
-    avatar: "",
-};
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(defaultUser);
+  const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<FirebaseAuthUser | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
@@ -84,12 +78,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 role: "student",
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
               };
-              await setDoc(userDocRef, newUser);
+              await setDoc(userDocRef, newUser)
+              .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                  path: userDocRef.path,
+                  operation: 'create',
+                  requestResourceData: newUser,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+              });
               setUser(newUser);
             }
           } else {
             setAuthUser(null);
-            setUser(defaultUser);
+            setUser(null);
             router.push('/');
           }
           setLoading(false);
@@ -136,7 +138,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await auth.signOut();
       setAuthUser(null);
-      setUser(defaultUser);
+      setUser(null);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch(error: any) {
        console.error("Logout failed:", error);
@@ -145,8 +147,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
   
   const borrowBook = async (bookId: string) => {
-    const studentProfile = user as Student;
-    if (!studentProfile || user.role !== 'student' || !firestore) {
+    if (!user || user.role !== 'student' || !firestore) {
       toast({
         variant: "destructive",
         title: "Action Not Allowed",
@@ -154,6 +155,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       return;
     }
+    const studentProfile = user as Student;
 
     const bookToBorrow = books.find(b => b.id === bookId);
     if (!bookToBorrow) {
@@ -178,36 +180,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
     const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory };
 
-    try {
-      const updatedBooks = books.map(b =>
-        b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
-      );
-      setBooks(updatedBooks);
-      setUser(updatedProfile);
+    const userDocRef = doc(firestore, "users", studentProfile.uid);
+    setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true })
+      .then(() => {
+        const updatedBooks = books.map(b =>
+          b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
+        );
+        setBooks(updatedBooks);
+        setUser(updatedProfile); // Correctly update local state
+  
+        toast({
+          title: "Book Borrowed!",
+          description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
+        });
+      })
+      .catch(async (error) => {
+         console.error("Error borrowing book:", error);
+         const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: { borrowHistory: updatedHistory },
+          });
+          errorEmitter.emit('permission-error', permissionError);
 
-      const userDocRef = doc(firestore, "users", studentProfile.uid);
-      await setDoc(userDocRef, { borrowHistory: updatedHistory }, { merge: true });
-
-      toast({
-        title: "Book Borrowed!",
-        description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
+         toast({
+             variant: "destructive",
+             title: "Uh oh! Something went wrong.",
+             description: "Could not borrow the book. Please try again.",
+         });
       });
-
-    } catch (error) {
-       console.error("Error borrowing book:", error);
-       toast({
-           variant: "destructive",
-           title: "Uh oh! Something went wrong.",
-           description: "Could not borrow the book. Please try again.",
-       });
-       setBooks(books);
-       setUser(studentProfile);
-    }
   };
 
   const returnBook = async (bookId: string) => {
+    if (!user || user.role !== 'student' || !firestore) return;
     const studentProfile = user as Student;
-    if (!studentProfile || user.role !== 'student' || !firestore) return;
 
     const bookToReturn = books.find(b => b.id === bookId);
     if (!bookToReturn) return;
@@ -231,31 +237,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const totalFines = (studentProfile.fines || 0) + fine;
     const updatedProfile = { ...studentProfile, borrowHistory: updatedHistory, fines: totalFines };
     
-    try {
+    const userDocRef = doc(firestore, "users", studentProfile.uid);
+    setDoc(userDocRef, { borrowHistory: updatedHistory, fines: totalFines }, { merge: true })
+      .then(() => {
         const updatedBooks = books.map(b => 
             b.id === bookId ? { ...b, availableCopies: b.availableCopies + 1 } : b
         );
         setBooks(updatedBooks);
-        setUser(updatedProfile);
-
-        const userDocRef = doc(firestore, "users", studentProfile.uid);
-        await setDoc(userDocRef, updatedProfile, { merge: true });
+        setUser(updatedProfile); // Correctly update local state
         
         toast({
             title: `Book "${bookToReturn.title}" Returned`,
             description: fine > 0 ? `A fine of ₹${fine} has been added to your account.` : 'Thank you for returning the book on time!',
         });
-
-    } catch (error) {
+      })
+      .catch(async (error) => {
         console.error("Error returning book:", error);
+        const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: { borrowHistory: updatedHistory, fines: totalFines },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+
         toast({
             variant: "destructive",
             title: "Return Failed",
             description: "Could not process the book return. Please try again."
         });
-        setBooks(books);
-        setUser(studentProfile);
-    }
+    });
   };
   
 
@@ -286,3 +296,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    

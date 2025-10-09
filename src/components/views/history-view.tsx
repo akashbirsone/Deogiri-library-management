@@ -9,20 +9,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { History } from "lucide-react";
+import type { Student } from "@/types";
 
 export function HistoryView() {
-    const { studentProfile } = useApp();
+    const { user } = useApp();
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
         setIsClient(true);
     }, []);
 
-    if (!studentProfile) {
+    if (!user || user.role !== 'student') {
         return <div>Student data not found.</div>;
     }
+    const studentProfile = user as Student;
     
-    const sortedHistory = [...studentProfile.borrowHistory].sort((a,b) => new Date(b.borrowDate).getTime() - new Date(a.borrowDate).getTime());
+    const sortedHistory = [...(studentProfile.borrowHistory || [])].sort((a,b) => new Date(b.borrowDate).getTime() - new Date(a.borrowDate).getTime());
 
     return (
         <div className="flex flex-col gap-6">
@@ -50,7 +52,7 @@ export function HistoryView() {
                                 {sortedHistory.map((item, index) => {
                                     const book = books.find(b => b.id === item.bookId);
                                     return (
-                                        <TableRow key={`${item.bookId}-${index}`}>
+                                        <TableRow key={`${item.bookId}-${item.borrowDate}`}>
                                             <TableCell className="font-medium">{book?.title || 'Unknown Book'}</TableCell>
                                             <TableCell>{isClient ? format(new Date(item.borrowDate), 'PP') : ''}</TableCell>
                                             <TableCell>
@@ -72,3 +74,5 @@ export function HistoryView() {
         </div>
     )
 }
+
+    

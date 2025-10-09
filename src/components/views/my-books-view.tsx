@@ -10,19 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Library, RefreshCw } from "lucide-react";
+import type { Student } from "@/types";
 
 export function MyBooksView() {
-    const { studentProfile, returnBook } = useApp();
-    const currentlyBorrowed = studentProfile?.borrowHistory.filter((item) => !item.returnDate) || [];
+    const { user, returnBook } = useApp();
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
         setIsClient(true);
     }, []);
 
-    if (!studentProfile) {
+    if (!user || user.role !== 'student') {
         return <div>Student data not found.</div>;
     }
+    const studentProfile = user as Student;
+    const currentlyBorrowed = studentProfile?.borrowHistory?.filter((item) => !item.returnDate) || [];
 
     return (
         <div className="flex flex-col gap-6">
@@ -81,3 +83,5 @@ export function MyBooksView() {
         </div>
     )
 }
+
+    
