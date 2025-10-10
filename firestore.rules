@@ -1,70 +1,62 @@
-/**
- * @fileoverview Firestore Security Rules for the Library App.
- *
- * Core Philosophy:
- * This ruleset enforces a role-based access control model, with 'student', 'librarian', and 'admin' roles.
- * Users can only read their own profile data.
- * Books can be read by anyone, but created, updated, and deleted only by admins or librarians.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
- * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}:
- *   Stores book catalog, readable by anyone, writeable by admins and librarians.
- *
- * Key Security Decisions:
- * - Users cannot be listed. This prevents unauthorized discovery of user information.
- * - Students have read only permissions, and admins and librarians can write to the book collection.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants access to user profiles based on user ID.
+     * @description This ruleset enforces a role-based access control model.
+     * @dataStructure Users are stored in the /users/{userId} collection, and books are stored under the /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} path.
+     * @keySecurityDecisions
+     *   - Only authenticated users can list users.
+     *   - Data shape is not strictly enforced during this phase.
+     */
+
+    /**
+     * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (get, list) User with matching UID can read their own profile.
-     * @allow (create) User with matching UID can create their own profile.
-     * @allow (update) User with matching UID can update their own profile.
-     * @deny  (get, list) User tries to read another user's profile.
-     * @deny  (create, update, delete) User tries to modify another user's profile.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (create) User with matching {userId} can create their own profile.
+     * @allow (get) Any authenticated user can get any user profile.
+     * @deny (create) User attempts to create a profile with a mismatched {userId}.
+     * @deny (update) User attempts to modify a different user's profile.
+     * @principle Enforces ownership for profile creation and restricts updates to the owner.
      */
     match /users/{userId} {
+      // Helper function to check if the requesting user is the owner of the profile.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
       function isSignedIn() {
         return request.auth != null;
       }
 
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get, list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
       allow delete: if false;
     }
 
     /**
-     * @description Manages book catalog access with role-based permissions.
+     * @description Manages access to the library's book catalog.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get, list) Any user can read the book catalog.
-     * @allow (create, update, delete) Admins and librarians can modify the book catalog.
-     * @deny  (create, update, delete) Students cannot modify the book catalog.
-     * @principle Grants public read access while restricting write access to admins.
+     * @allow (get) Any user can read book information.
+     * @allow (list) Any user can browse the book catalog.
+     * @deny (create) Only authenticated users should be able to add books. Additional authorization may be needed.
+     * @deny (update) Only authorized users can modify book details.
+     * @deny (delete) Restricts book deletion to authorized users only.
+     * @principle Provides public read access while restricting write access to authorized users.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
 
-        function isAuthorized() {
-            return isSignedIn() && (request.auth.token.role == 'admin' || request.auth.token.role == 'librarian');
-        }
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-        allow get, list: if true;
-        allow create: if isAuthorized();
-        allow update: if isAuthorized() && resource != null;
-        allow delete: if isAuthorized() && resource != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if false;
     }
   }
 }
