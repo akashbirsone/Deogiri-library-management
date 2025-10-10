@@ -1,60 +1,109 @@
 /**
- * @fileoverview Firestore Security Rules for the library application.
+ * @fileoverview Firestore Security Rules for Prototyping.
  *
  * Core Philosophy:
- * This ruleset enforces a role-based access control model, with a strict separation of permissions based on user roles (student, librarian, admin).
- * User data is private and only accessible to the owning user or admins.
+ * This ruleset prioritizes strict authorization based on user roles and ownership, while relaxing data validation constraints
+ * to enable rapid prototyping.  It enforces who can access what, but does not enforce the precise schema of data.
  *
  * Data Structure:
- * - /users/{userId}: Stores profile information for each user.
- * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}: Stores the library's book catalog in a hierarchical structure.
+ * - /users/{userId}: Stores individual user profiles. Access is restricted to the owning user.
+ * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}:
+ *   Hierarchical structure for organizing books.  Read access is public, but writes are only permitted to authorized users with a role.
  *
  * Key Security Decisions:
- * - Users can only read their own profile data.
- * - Only authenticated users can access any data.
- * - Data validation is relaxed in this prototype to allow flexibility and fast iteration.
+ * - User listing is denied to prevent unauthorized data access.
+ * - The rules do not implement comprehensive data validation, allowing developers to iterate quickly on the data model.
+ * - All write operations are carefully secured with authorization checks to prevent unauthorized data modification or deletion.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secure user profiles. Users can only read their own profile data. Admins can read all profiles.
-     * @path /users/{userId}
-     * @allow (get, create, update, delete) User with ID 'test_user' can read their own profile: auth.uid == 'test_user'.
-     * @deny (get) User with ID 'other_user' cannot read 'test_user' profile: auth.uid != 'test_user'.
-     * @principle Enforces document ownership for user profiles and validates relational integrity.
+     * @description Prevents listing all users in the database.
+     * @path /users
+     * @allow None - Listing users is not permitted.
+     * @deny (list) Any user attempting to list all users.
+     * @principle Prevents unauthorized access to user data by disallowing listing.
      */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
+    match /users {
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secure the book catalog. Anyone can read books, but writes are not allowed.
+     * @description Manages user profile data.
+     * @path /users/{userId}
+     * @allow (get) Authenticated user accessing their own profile.
+     * @allow (create) Authenticated user creating their own profile.
+     * @allow (update) Authenticated user updating their own profile.
+     * @allow (delete) Authenticated user deleting their own profile.
+     * @deny (get) Authenticated user accessing a different user's profile.
+     * @deny (create) Authenticated user creating a profile with a mismatched user ID.
+     * @deny (update) Authenticated user updating a different user's profile.
+     * @deny (delete) Authenticated user deleting a different user's profile.
+     * @principle Enforces user-ownership: only the authenticated user can read/write their own profile data.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.uid == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages book catalog within a hierarchical structure.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get, list) Any authenticated user can read book data.
-     * @deny (create, update, delete) No one can create, update, or delete books.
-     * @principle Public read access with restricted write access.
+     * @allow (get) Any user can read book information.
+     * @allow (list) Any user can list books.
+     * @allow (create) Only authorized users (e.g., librarians, admins) can add books.
+     * @allow (update) Only authorized users can modify book information.
+     * @allow (delete) Only authorized users can remove books.
+     * @deny (create) Unauthorized users attempting to add books.
+     * @deny (update) Unauthorized users attempting to modify books.
+     * @deny (delete) Unauthorized users attempting to remove books.
+     * @principle Public read access with role-based write control.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn() && isAuthorized();
+      allow update: if isSignedIn() && isAuthorized() && resource != null;
+      allow delete: if isSignedIn() && isAuthorized() && resource != null;
+    }
+
+    // ======================== Helper Functions ========================
+
+    /**
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is authenticated, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user ID matches the authenticated user's UID, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource and the resource exists.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user ID matches the authenticated user's UID and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'librarian' or 'admin' role.
+     * @return {boolean} True if the user has the required role, false otherwise.
+     */
+    function isAuthorized() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['librarian', 'admin'];
     }
   }
 }
