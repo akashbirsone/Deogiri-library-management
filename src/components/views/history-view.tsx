@@ -3,7 +3,6 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { books } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,7 @@ import { History } from "lucide-react";
 import type { Student } from "@/types";
 
 export function HistoryView() {
-    const { user } = useApp();
+    const { user, books: allBooks } = useApp();
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
@@ -50,10 +49,10 @@ export function HistoryView() {
                             </TableHeader>
                             <TableBody>
                                 {sortedHistory.map((item, index) => {
-                                    const book = books.find(b => b.id === item.bookId);
+                                    const book = allBooks.find(b => b.id === item.bookId);
                                     return (
                                         <TableRow key={`${item.bookId}-${item.borrowDate}`}>
-                                            <TableCell className="font-medium">{book?.title || 'Unknown Book'}</TableCell>
+                                            <TableCell className="font-medium">{book?.title || 'Loading...'}</TableCell>
                                             <TableCell>{isClient ? format(new Date(item.borrowDate), 'PP') : ''}</TableCell>
                                             <TableCell>
                                                 {item.returnDate ? (isClient ? format(new Date(item.returnDate), 'PP') : '') : <Badge variant="outline">On Loan</Badge>}

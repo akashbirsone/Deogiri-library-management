@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Book as BookType } from "@/types";
 import {
   Select,
@@ -34,70 +33,63 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { departments } from "@/lib/departments";
-import type { Course, Semester, Subject } from "@/lib/departments";
 import { Switch } from "@/components/ui/switch";
 
 export function BooksView() {
-  const { user, books, borrowBook, addBook, updateBook, deleteBook, loading: appLoading } =
-    useApp();
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(
-    null
-  );
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(
-    null
-  );
-  const [selectedSemesterId, setSelectedSemesterId] =
-    React.useState<string | null>(null);
+  const {
+    user,
+    books: allBooks,
+    borrowBook,
+    addBook,
+    updateBook,
+    deleteBook,
+    loading: appLoading,
+    setBooksPath,
+  } = useApp();
 
+  const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
+  const [selectedSemesterId, setSelectedSemesterId] = React.useState<string | null>(null);
+  
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<BookType | null>(null);
   const [formSubject, setFormSubject] = React.useState<string>("");
   const { toast } = useToast();
+  
+  const selectedDepartment = React.useMemo(() => departments.find((d) => d.id === selectedDeptId), [selectedDeptId]);
+  const selectedCourse = React.useMemo(() => selectedDepartment?.courses.find((c) => c.id === selectedCourseId), [selectedDepartment, selectedCourseId]);
+  const selectedSemester = React.useMemo(() => selectedCourse?.semesters.find((s) => s.id === selectedSemesterId), [selectedCourse, selectedSemesterId]);
 
-  const handleDeptChange = (deptId: string) => {
-    setSelectedDeptId(deptId);
-    setSelectedCourseId(null);
-    setSelectedSemesterId(null);
-  };
-
-  const handleCourseChange = (courseId: string) => {
-    setSelectedCourseId(courseId);
-    setSelectedSemesterId(null);
-  };
-
-  const selectedDepartment = React.useMemo(
-    () => departments.find((d) => d.id === selectedDeptId),
-    [selectedDeptId]
-  );
-  const selectedCourse = React.useMemo(
-    () => selectedDepartment?.courses.find((c) => c.id === selectedCourseId),
-    [selectedDepartment, selectedCourseId]
-  );
-  const selectedSemester = React.useMemo(
-    () => selectedCourse?.semesters.find((s) => s.id === selectedSemesterId),
-    [selectedCourse, selectedSemesterId]
-  );
-
-  const getPath = () => {
-      if (!selectedDeptId || !selectedCourseId || !selectedSemesterId) return null;
-      return `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}/subjects`;
+  const getPath = (subjectName: string) => {
+    if (!selectedDeptId || !selectedCourseId || !selectedSemesterId || !subjectName) return null;
+    return `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}/subjects/${subjectName}/books`;
   }
+  
+  // Effect to update the book path for the listener in AppProvider
+  React.useEffect(() => {
+    if (selectedDeptId && selectedCourseId && selectedSemesterId) {
+        const fullPath = `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}`;
+        setBooksPath(fullPath);
+    } else {
+        setBooksPath(null); // Clear path if not fully selected
+    }
+  }, [selectedDeptId, selectedCourseId, selectedSemesterId, setBooksPath]);
+
 
   const handleFormSubmit = async (bookData: Partial<BookType>) => {
-    const path = getPath();
+    const path = getPath(formSubject);
     if (!user || !path || !formSubject) return;
 
     if (editingBook && "id" in editingBook) {
       await updateBook(
-        `${path}/${formSubject}/books/${editingBook.id}`,
+        `${path}/${editingBook.id}`,
         { ...editingBook, ...bookData }
       );
       toast({
@@ -119,7 +111,7 @@ export function BooksView() {
         addedBy: user.email || "unknown",
         addedDate: new Date().toISOString(),
       };
-      await addBook(`${path}/${formSubject}/books`, newBook);
+      await addBook(path, newBook);
       toast({
         title: "Book Added",
         description: `${bookData.title} has been added to the catalog.`,
@@ -130,16 +122,16 @@ export function BooksView() {
     setFormSubject("");
   };
   
-  const handleEditBook = (book: BookType, subjectName: string) => {
+  const handleEditBook = (book: BookType) => {
     setEditingBook(book);
-    setFormSubject(subjectName);
+    setFormSubject(book.subject);
     setIsFormOpen(true);
   };
   
-  const handleDeleteBook = async (book: BookType, subjectName: string) => {
-      const path = getPath();
+  const handleDeleteBook = async (book: BookType) => {
+      const path = getPath(book.subject);
       if (!path) return;
-      await deleteBook(`${path}/${subjectName}/books/${book.id}`);
+      await deleteBook(`${path}/${book.id}`);
       toast({ title: "Book Deleted", variant: "destructive" });
   }
 
@@ -161,7 +153,7 @@ export function BooksView() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="department-select">Department</Label>
-              <Select onValueChange={handleDeptChange}>
+              <Select onValueChange={(value) => { setSelectedDeptId(value); setSelectedCourseId(null); setSelectedSemesterId(null);}}>
                 <SelectTrigger id="department-select">
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
@@ -177,7 +169,7 @@ export function BooksView() {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="course-select">Course</Label>
               <Select
-                onValueChange={handleCourseChange}
+                onValueChange={(value) => { setSelectedCourseId(value); setSelectedSemesterId(null); }}
                 disabled={!selectedDepartment}
                 value={selectedCourseId || ""}
               >
@@ -225,7 +217,7 @@ export function BooksView() {
       {!appLoading && selectedSemester && (
         <div className="space-y-8">
           {selectedSemester.subjects.map((subject) => {
-            const subjectBooks = books.filter(
+            const subjectBooks = allBooks.filter(
               (book) => book.subject === subject.name
             );
             return (
@@ -286,9 +278,9 @@ export function BooksView() {
                               className="w-full"
                               disabled={!book.isAvailable}
                               onClick={() => {
-                                const path = getPath();
-                                if(!path) return;
-                                borrowBook(`${path}/${subject.name}/books/${book.id}`)
+                                const bookPath = getPath(book.subject);
+                                if(!bookPath) return;
+                                borrowBook(`${bookPath}/${book.id}`)
                               }}
                             >
                               Borrow
@@ -300,9 +292,7 @@ export function BooksView() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                  handleEditBook(book, subject.name)
-                                }
+                                onClick={() => handleEditBook(book)}
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
@@ -310,7 +300,7 @@ export function BooksView() {
                                 variant="outline"
                                 size="sm"
                                 className="text-destructive"
-                                onClick={() => handleDeleteBook(book, subject.name)}
+                                onClick={() => handleDeleteBook(book)}
                               >
                                 <Trash className="h-3 w-3" />
                               </Button>
@@ -319,9 +309,9 @@ export function BooksView() {
                                     id={`available-${book.id}`}
                                     checked={book.isAvailable}
                                     onCheckedChange={(isAvailable) => {
-                                        const path = getPath();
-                                        if(!path) return;
-                                        updateBook(`${path}/${subject.name}/books/${book.id}`, { isAvailable })
+                                        const bookPath = getPath(book.subject);
+                                        if(!bookPath) return;
+                                        updateBook(`${bookPath}/${book.id}`, { isAvailable })
                                     }}
                                 />
                                 <Label htmlFor={`available-${book.id}`} className="text-xs">Available</Label>

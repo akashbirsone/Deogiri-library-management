@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query, getDocs, collectionGroup, where } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ import { add, format, formatISO, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { departments } from "@/lib/departments";
 
 interface AppContextType {
   user: User | null;
@@ -31,6 +32,7 @@ interface AppContextType {
   firestore: Firestore | null;
   books: Book[];
   users: User[];
+  setBooksPath: (path: string | null) => void;
   
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
@@ -43,6 +45,7 @@ interface AppContextType {
   deleteBook: (path: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
+  seedDatabase: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,6 +58,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [booksPath, setBooksPath] = useState<string | null>(null);
   const router = useRouter();
   
   const { toast } = useToast();
@@ -129,15 +133,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [toast, router]);
 
   useEffect(() => {
-    if (!firestore || !user) {
-        if (!user) {
-            setUsers([]);
-        }
-        return;
-    };
-
+    if (!firestore) return;
+    
     let unsubUsers = () => {};
-    if (user.role === 'admin' || user.role === 'librarian') {
+
+    if (user && (user.role === 'admin' || user.role === 'librarian')) {
         const usersCollection = collection(firestore, 'users');
         unsubUsers = onSnapshot(usersCollection, (snapshot) => {
             const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
@@ -370,24 +370,61 @@ const returnBook = async (bookId: string) => {
     };
 
     useEffect(() => {
-        if (!firestore) {
+        if (!firestore || !booksPath) {
             setBooks([]);
             return;
         }
+        
+        setLoading(true);
 
-        const booksQuery = query(collection(firestore, 'departments/bsc-it-cs/courses/bsc-it/semesters/sem1/subjects/Fundamentals of IT/books'));
+        const booksQuery = query(collectionGroup(firestore, 'books'), where('__name__', '>=', booksPath), where('__name__', '<', booksPath + '\uf8ff'));
+
         const unsub = onSnapshot(booksQuery, (snapshot) => {
             const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
             setBooks(booksData);
             setLoading(false);
         }, (error) => {
-             const permissionError = new FirestorePermissionError({ path: 'departments/bsc-it-cs/courses/bsc-it/semesters/sem1/subjects/Fundamentals of IT/books', operation: 'list' });
+             const permissionError = new FirestorePermissionError({ path: booksPath, operation: 'list' });
              errorEmitter.emit('permission-error', permissionError);
              setLoading(false);
+             setBooks([]);
         });
 
         return () => unsub();
-    }, [firestore]);
+    }, [firestore, booksPath]);
+
+    const seedDatabase = async () => {
+        if (!firestore || !user || user.role !== 'admin') {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
+
+        const batch = writeBatch(firestore);
+
+        for (const dept of departments) {
+            for (const course of dept.courses) {
+                for (const semester of course.semesters) {
+                    for (const subject of semester.subjects) {
+                        const bookPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
+                        
+                        const newBook: Omit<Book, 'id'> = {
+                            title: subject.name,
+                            author: `Dr. A. P. J. Abdul Kalam`, // Generic author
+                            subject: subject.name,
+                            isAvailable: true,
+                            coverImage: `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                            coverImageHint: subject.name,
+                            addedBy: user.email || 'admin',
+                            addedDate: new Date().toISOString(),
+                        };
+                        const newBookRef = doc(collection(firestore, bookPath));
+                        batch.set(newBookRef, newBook);
+                    }
+                }
+            }
+        }
+        await batch.commit();
+    };
 
 
   return (
@@ -399,6 +436,7 @@ const returnBook = async (bookId: string) => {
         firestore,
         books,
         users,
+        setBooksPath,
         signInWithGoogle,
         signInWithGithub,
         emailLogin,
@@ -410,6 +448,7 @@ const returnBook = async (bookId: string) => {
         deleteBook,
         updateUser,
         deleteUser,
+        seedDatabase
     }}>
       {children}
     </AppContext.Provider>
@@ -423,3 +462,4 @@ export const useApp = () => {
   }
   return context;
 };
+

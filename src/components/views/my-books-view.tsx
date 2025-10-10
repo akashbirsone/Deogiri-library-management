@@ -3,17 +3,16 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { books } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Library, RefreshCw } from "lucide-react";
-import type { Student } from "@/types";
+import type { Student, Book } from "@/types";
 
 export function MyBooksView() {
-    const { user, returnBook } = useApp();
+    const { user, returnBook, books: allBooks } = useApp();
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
@@ -51,8 +50,15 @@ export function MyBooksView() {
                             </TableHeader>
                             <TableBody>
                                 {currentlyBorrowed.map(item => {
-                                    const book = books.find(b => b.id === item.bookId);
-                                    if (!book) return null;
+                                    const book = allBooks.find(b => b.id === item.bookId);
+                                    if (!book) { // Find in all books, since the path might not be loaded
+                                        const mockBook = { title: "Loading..." };
+                                        return (
+                                             <TableRow key={`${item.bookId}-${item.borrowDate}`}>
+                                                <TableCell className="font-medium">{mockBook.title}</TableCell>
+                                             </TableRow>
+                                        )
+                                    }
                                     const isOverdue = new Date(item.dueDate) < new Date();
                                     return (
                                         <TableRow key={`${item.bookId}-${item.borrowDate}`}>

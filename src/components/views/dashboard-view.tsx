@@ -3,14 +3,16 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock } from "lucide-react";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { Student } from "@/types";
+import type { Student, Book as BookType } from "@/types";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 
 export function DashboardView() {
@@ -33,9 +35,10 @@ export function DashboardView() {
 }
 
 const AdminDashboard = () => {
-    const { books, users } = useApp();
-    const totalBooks = books.length;
-    const borrowedBooksCount = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
+    const { books: allBooks, users, seedDatabase } = useApp();
+    const { toast } = useToast();
+    
+    const borrowedBooksCount = allBooks.filter(b => !b.isAvailable).length;
     const totalStudents = users.filter(u => u.role === 'student').length;
     const totalFines = (users.filter(u => u.role === 'student') as Student[]).reduce((acc, student) => acc + (student.fines || 0), 0);
     const [isClient, setIsClient] = React.useState(false);
@@ -49,15 +52,51 @@ const AdminDashboard = () => {
         const names = name.split(" ")
         return names.map((n) => n[0]).join("").toUpperCase();
     }
+    
+    const allBorrowedItems = (users.filter(u => u.role === 'student') as Student[])
+        .flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h})));
 
-    const chartData = books.map(book => ({
-        name: book.title.slice(0, 15) + (book.title.length > 15 ? '...' : ''),
-        borrowed: book.totalCopies - book.availableCopies,
-    })).sort((a,b) => b.borrowed - a.borrowed).slice(0, 5);
+    const chartData = allBorrowedItems
+        .reduce((acc, { history }) => {
+            const book = allBooks.find(b => b.id === history.bookId);
+            if (book) {
+                const existing = acc.find(item => item.name === book.title);
+                if (existing) {
+                    existing.borrowed += 1;
+                } else {
+                    acc.push({ name: book.title.slice(0, 15) + (book.title.length > 15 ? '...' : ''), borrowed: 1 });
+                }
+            }
+            return acc;
+        }, [] as {name: string, borrowed: number}[])
+        .sort((a,b) => b.borrowed - a.borrowed).slice(0, 5);
+        
+    const handleSeed = async () => {
+        try {
+            await seedDatabase();
+            toast({
+                title: "Database Seeded",
+                description: "The book catalog has been populated with initial data.",
+            })
+        } catch(e) {
+            toast({
+                title: "Seeding Failed",
+                description: "There was an error seeding the database.",
+                variant: "destructive"
+            })
+        }
+    }
+
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <Button onClick={handleSeed} variant="outline">
+            <Database className="mr-2 h-4 w-4" />
+            Seed Books
+        </Button>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -65,7 +104,7 @@ const AdminDashboard = () => {
             <Book className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBooks}</div>
+            <div className="text-2xl font-bold">{allBooks.length}</div>
             <p className="text-xs text-muted-foreground">Unique titles in library</p>
           </CardContent>
         </Card>
@@ -131,8 +170,8 @@ const AdminDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(users.filter(u => u.role === 'student') as Student[]).flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
-                            const book = books.find(b => b.id === history.bookId);
+                        {allBorrowedItems.slice(0, 5).map(({student, history}) => {
+                            const book = allBooks.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.uid}-${history.bookId}`}>
                                     <TableCell>{book?.title}</TableCell>
@@ -193,16 +232,19 @@ const AdminDashboard = () => {
 };
 
 const LibrarianDashboard = () => {
-    const { books } = useApp();
-    const totalBooks = books.reduce((acc, book) => acc + book.totalCopies, 0);
-    const borrowedBooks = books.reduce((acc, book) => acc + (book.totalCopies - book.availableCopies), 0);
-    const availableBooks = totalBooks - borrowedBooks;
-    const lowStockBooks = books.filter(book => book.availableCopies <= 2 && book.availableCopies > 0).length;
+    const { books, users } = useApp();
+    const borrowedBooksCount = books.filter(b => !b.isAvailable).length;
+    const totalBooks = books.length;
+    const availableBooks = totalBooks - borrowedBooksCount;
+    const lowStockBooks = books.filter(book => !book.isAvailable).length; // Simplified
     const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
         setIsClient(true);
     }, []);
+    
+    const allBorrowedItems = (users.filter(u => u.role === 'student') as Student[])
+        .flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h})));
 
     return (
     <div className="flex flex-col gap-6">
@@ -210,7 +252,7 @@ const LibrarianDashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Copies</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Books</CardTitle>
             <Book className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -220,7 +262,7 @@ const LibrarianDashboard = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Copies</CardTitle>
+            <CardTitle className="text-sm font-medium">Available Books</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -230,22 +272,22 @@ const LibrarianDashboard = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Borrowed Copies</CardTitle>
+            <CardTitle className="text-sm font-medium">Borrowed Books</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{borrowedBooks}</div>
+            <div className="text-2xl font-bold">{borrowedBooksCount}</div>
              <p className="text-xs text-muted-foreground">Currently on loan</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium">Unavailable Books</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{lowStockBooks}</div>
-            <p className="text-xs text-muted-foreground">Titles with &lt;= 2 copies</p>
+            <p className="text-xs text-muted-foreground">Total unavailable titles</p>
           </CardContent>
         </Card>
       </div>
@@ -263,7 +305,7 @@ const LibrarianDashboard = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(useApp().users.filter(u => u.role === 'student') as Student[]).flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h}))).slice(0, 5).map(({student, history}) => {
+                        {allBorrowedItems.slice(0, 5).map(({student, history}) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <TableRow key={`${student.uid}-${history.bookId}`}>
@@ -388,7 +430,3 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
-    
-
-    
