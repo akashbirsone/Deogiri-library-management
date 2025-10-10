@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database } from "lucide-react";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -434,3 +434,5 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
