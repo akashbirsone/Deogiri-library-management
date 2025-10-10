@@ -130,13 +130,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!firestore || !user) {
-        if (!user) { // Clear users if no user is logged in
+        if (!user) {
             setUsers([]);
         }
         return;
     };
-    
-    // Only admins/librarians can see all users
+
     let unsubUsers = () => {};
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
@@ -148,14 +147,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        // Clear user list if a student logs in, they should only see their own data
-        setUsers([]);
+        setUsers([]); 
     }
 
     return () => {
         unsubUsers();
     };
-  }, [firestore, user]);
+}, [firestore, user]);
 
   const signInWithGoogle = async () => {
     if (!auth) return;
@@ -371,36 +369,25 @@ const returnBook = async (bookId: string) => {
         });
     };
 
-    // New effect to listen to books based on path
-    const [bookPath, setBookPath] = useState<string | null>(null);
-
-    const listenToBooks = useCallback((path: string | null) => {
-        setBookPath(path);
-    }, []);
-
     useEffect(() => {
-        if (!firestore || !bookPath) {
+        if (!firestore) {
             setBooks([]);
             return;
         }
 
-        const subjects = bookPath.split('/');
-        const subjectName = subjects[subjects.length-1];
-
-        const q = query(collection(firestore, bookPath));
-
-        const unsub = onSnapshot(q, (snapshot) => {
-            const booksData = snapshot.docs.map(doc => ({ id: doc.id, subject: subjectName, ...doc.data() } as Book));
+        const booksQuery = query(collection(firestore, 'departments/bsc-it-cs/courses/bsc-it/semesters/sem1/subjects/Fundamentals of IT/books'));
+        const unsub = onSnapshot(booksQuery, (snapshot) => {
+            const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
             setBooks(booksData);
             setLoading(false);
         }, (error) => {
-             const permissionError = new FirestorePermissionError({ path: bookPath, operation: 'list' });
+             const permissionError = new FirestorePermissionError({ path: 'departments/bsc-it-cs/courses/bsc-it/semesters/sem1/subjects/Fundamentals of IT/books', operation: 'list' });
              errorEmitter.emit('permission-error', permissionError);
              setLoading(false);
         });
 
         return () => unsub();
-    }, [firestore, bookPath]);
+    }, [firestore]);
 
 
   return (
