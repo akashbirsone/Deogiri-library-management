@@ -1,53 +1,43 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper functions
+    function isStudent() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    function isAdmin() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isLibrarian() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'librarian';
+    }
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      // Check if the user is authenticated before checking their role.
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isLibrarian() {
-      // Check if the user is authenticated before checking their role.
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'librarian';
-    }
-
-    function isAuthorized() {
-      return isAdmin() || isLibrarian();
-    }
-
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Allow user creation for any authenticated user (e.g., on signup)
       allow create: if request.auth.uid != null;
-      // Users can only read or update their own profile. Admins/Librarians can read any profile.
-      allow read: if isOwner(userId) || isAuthorized();
-      allow update: if isOwner(userId);
-      // Only admins can delete user documents.
+      allow read: if isOwner(userId) || isAdmin() || isLibrarian();
+      allow update: if isOwner(userId) || isAdmin() || isLibrarian();
       allow delete: if isAdmin();
-      // Students can list users. Admins/Librarians cannot.
-      allow list: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
-    }
-
-    // Rules for the hierarchical book catalog
-    match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-      // Any authenticated user can read (get) a book document.
-      allow get: if request.auth.uid != null;
-      
-      // Admins and Librarians can create, update, and delete books.
-      allow write: if isAuthorized();
     }
     
-    // Allow collection group queries on 'books' for any authenticated user.
-    // This is required for browsing the catalog. Write access is still controlled by the rule above.
+    // Rules for the book catalog
+    match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
+      allow read: if request.auth.uid != null;
+      allow create: if isAdmin() || isLibrarian();
+      allow update: if isAdmin() || isLibrarian();
+      allow delete: if isAdmin() || isLibrarian();
+    }
+    
     match /{path=**}/books/{bookId} {
-      allow list: if request.auth.uid != null;
+       allow list: if request.auth.uid != null;
     }
   }
 }
+
+    

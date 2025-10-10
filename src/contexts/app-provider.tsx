@@ -400,9 +400,7 @@ const returnBook = async (bookId: string) => {
         }
 
         const batch = writeBatch(firestore);
-        const authors = ["Dr. R. S. Aggarwal", "E. Balagurusamy", "Yashavant Kanetkar", "William Stallings", "Andrew S. Tanenbaum", "Abraham Silberschatz"];
-        let authorIndex = 0;
-
+        
         for (const dept of departments) {
             for (const course of dept.courses) {
                 for (const semester of course.semesters) {
@@ -410,11 +408,11 @@ const returnBook = async (bookId: string) => {
                         const bookPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
                         
                         const newBook: Omit<Book, 'id'> = {
-                            title: subject.name,
-                            author: authors[authorIndex % authors.length],
+                            title: "",
+                            author: "",
                             subject: subject.name,
                             isAvailable: true,
-                            coverImage: `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                            coverImage: "",
                             coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
                             addedBy: user.email || 'admin',
                             addedDate: new Date().toISOString(),
@@ -424,7 +422,6 @@ const returnBook = async (bookId: string) => {
                         };
                         const newBookRef = doc(collection(firestore, bookPath));
                         batch.set(newBookRef, newBook);
-                        authorIndex++;
                     }
                 }
             }
@@ -474,3 +471,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
