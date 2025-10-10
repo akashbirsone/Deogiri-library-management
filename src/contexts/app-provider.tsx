@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query, getDocs, collectionGroup, where } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query, getDocs, collectionGroup, where, limit } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -402,71 +402,89 @@ const returnBook = async (bookId: string) => {
     }, [firestore, booksPath]);
 
     const seedDatabase = async () => {
-        if (!firestore || !user || user.role !== 'admin') {
-            toast({ variant: 'destructive', title: 'Permission Denied' });
-            return;
-        }
-    
-        const booksQuery = query(collectionGroup(firestore, 'books'));
-        const existingBooksSnapshot = await getDocs(booksQuery);
-        const existingBookPaths = new Set(existingBooksSnapshot.docs.map(d => d.ref.path));
-    
-        const batch = writeBatch(firestore);
-        let booksAddedCount = 0;
-    
-        for (const dept of departments) {
-            for (const course of dept.courses) {
-                for (const semester of course.semesters) {
-                    for (const subject of semester.subjects) {
-                        const bookPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
-                        
-                        const bookExists = [...existingBookPaths].some(path => path.startsWith(bookPath));
-                        
-                        if (!bookExists) {
-                            const newBook: Omit<Book, 'id'> = {
-                                title: "", 
-                                author: "", 
-                                subject: subject.name,
-                                isAvailable: true,
-                                coverImage: "",
-                                coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
-                                addedBy: user.email || 'admin',
-                                addedDate: new Date().toISOString(),
-                                department: dept.id,
-                                course: course.id,
-                                semester: semester.id,
-                            };
-                            const newBookRef = doc(collection(firestore, bookPath));
-                            batch.set(newBookRef, newBook);
-                            booksAddedCount++;
-                        }
-                    }
-                }
-            }
-        }
-    
-        if (booksAddedCount === 0) {
-            toast({
-                title: "Database is Already Up-to-date",
-                description: "No new book placeholders were needed.",
-            });
-            return;
-        }
-    
-        batch.commit().then(() => {
-            toast({
-                title: "Database Seeding Complete",
-                description: `${booksAddedCount} new book placeholder(s) have been added.`,
-            });
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: '/departments',
-                operation: 'create',
-                requestResourceData: { info: 'Batch write for seeding database.' }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    };
+      if (!firestore || !user || user.role !== 'admin') {
+          toast({ variant: 'destructive', title: 'Permission Denied' });
+          return;
+      }
+  
+      let booksUpdatedCount = 0;
+      let booksAddedCount = 0;
+      const batch = writeBatch(firestore);
+  
+      for (const dept of departments) {
+          for (const course of dept.courses) {
+              for (const semester of course.semesters) {
+                  for (const subject of semester.subjects) {
+                      const bookCollectionPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
+                      const booksQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
+                      
+                      try {
+                          const existingBookSnapshot = await getDocs(booksQuery);
+  
+                          if (existingBookSnapshot.empty) {
+                              // Book does not exist, create it
+                              const newBookRef = doc(collection(firestore, bookCollectionPath));
+                              const newBookData: Omit<Book, 'id'> = {
+                                  title: subject.name,
+                                  author: "Faculty of " + dept.name,
+                                  subject: subject.name,
+                                  isAvailable: true,
+                                  coverImage: subject.coverImage || `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                                  coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
+                                  addedBy: user.email || 'admin',
+                                  addedDate: new Date().toISOString(),
+                                  department: dept.id,
+                                  course: course.id,
+                                  semester: semester.id,
+                              };
+                              batch.set(newBookRef, newBookData);
+                              booksAddedCount++;
+                          } else {
+                              // Book exists, update its cover image
+                              const bookDoc = existingBookSnapshot.docs[0];
+                              if (bookDoc.data().coverImage !== subject.coverImage) {
+                                  batch.update(bookDoc.ref, { coverImage: subject.coverImage });
+                                  booksUpdatedCount++;
+                              }
+                          }
+                      } catch (e: any) {
+                          const permissionError = new FirestorePermissionError({
+                              path: bookCollectionPath,
+                              operation: 'list', 
+                          });
+                          errorEmitter.emit('permission-error', permissionError);
+                          toast({ variant: "destructive", title: "Seeding Error", description: "Could not access book data to perform update." });
+                          return; 
+                      }
+                  }
+              }
+          }
+      }
+  
+      if (booksAddedCount === 0 && booksUpdatedCount === 0) {
+          toast({
+              title: "Database is Already Up-to-date",
+              description: "No new book placeholders or cover image updates were needed.",
+          });
+          return;
+      }
+  
+      try {
+          await batch.commit();
+          toast({
+              title: "Database Seeding Complete",
+              description: `${booksAddedCount} new book(s) added and ${booksUpdatedCount} cover image(s) updated.`,
+          });
+      } catch (e: any) {
+          const permissionError = new FirestorePermissionError({
+              path: '/departments',
+              operation: 'create', // Operation is a batch write, so 'create' is a stand-in
+              requestResourceData: { info: 'Batch write for seeding/updating database.' }
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          toast({ variant: "destructive", title: "Seeding Failed", description: "An error occurred while committing the changes." });
+      }
+  };
 
 
   return (
@@ -504,5 +522,7 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
 
     
