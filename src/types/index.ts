@@ -24,12 +24,14 @@ export interface Book {
   author: string;
   isbn: string;
   category: string;
-  department?: string;
+  department: string;
   publicationYear: number;
   totalCopies: number;
   availableCopies: number;
   coverImage: string;
   coverImageHint: string;
+  addedBy?: string;
+  addedDate?: string;
 }
 
 export interface BorrowHistoryItem {
@@ -50,3 +52,5 @@ export interface Student extends User {
   borrowHistory: BorrowHistoryItem[];
   fines: number;
 }
+
+    

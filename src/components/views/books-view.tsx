@@ -28,27 +28,39 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { departmentsData } from "@/lib/departments";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function BooksView() {
     const { user, books, borrowBook, addBook, updateBook, deleteBook } = useApp();
     const [searchTerm, setSearchTerm] = React.useState("");
-    const [category, setCategory] = React.useState("all");
-    const [department, setDepartment] = React.useState("all");
+    const [selectedDepartment, setSelectedDepartment] = React.useState("all");
+    const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingBook, setEditingBook] = React.useState<BookType | null>(null);
     const { toast } = useToast();
 
     const handleFormSubmit = (bookData: Partial<BookType>) => {
+        if (!user) return;
+        
         if (editingBook && 'id' in editingBook) {
             updateBook({ ...editingBook, ...bookData });
             toast({ title: "Book Updated", description: `${bookData.title} has been updated.`});
         } else {
-            const newBook = {
-                ...bookData,
-                publicationYear: Number(bookData.publicationYear),
-                totalCopies: Number(bookData.totalCopies),
-                availableCopies: Number(bookData.totalCopies),
-            } as Omit<BookType, 'id'>;
+            const newBook : Omit<BookType, 'id'> = {
+                title: bookData.title || '',
+                author: bookData.author || '',
+                isbn: bookData.isbn || '',
+                category: bookData.category || '',
+                department: bookData.department || '',
+                publicationYear: Number(bookData.publicationYear) || new Date().getFullYear(),
+                totalCopies: Number(bookData.totalCopies) || 0,
+                availableCopies: Number(bookData.totalCopies) || 0,
+                coverImage: bookData.coverImage || `https://picsum.photos/seed/${Date.now()}/300/450`,
+                coverImageHint: bookData.coverImageHint || 'book cover',
+                addedBy: user.email || 'unknown',
+                addedDate: new Date().toISOString(),
+            };
             addBook(newBook);
             toast({ title: "Book Added", description: `${bookData.title} has been added to the catalog.`});
         }
@@ -74,14 +86,14 @@ export function BooksView() {
     const filteredBooks = books.filter(book => {
         const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               book.author.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = category === 'all' || book.category === category;
-        const matchesDepartment = department === 'all' || book.department === department;
-        return matchesSearch && matchesCategory && matchesDepartment;
+        const matchesDepartment = selectedDepartment === 'all' || book.department === selectedDepartment;
+        const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+        return matchesSearch && matchesDepartment && matchesCategory;
     });
     
-    const allCategories = ['all', ...Array.from(new Set(books.map(b => b.category)))];
-    const allDepartments = ['all', ...Array.from(new Set(books.map(b => b.department).filter(Boolean))) as string[]];
-
+    const categoriesForSelectedDept = selectedDepartment !== 'all' 
+        ? Object.values(departmentsData[selectedDepartment as keyof typeof departmentsData] || {}).flat()
+        : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,33 +125,29 @@ export function BooksView() {
             />
             <div className="flex flex-col md:flex-row md:items-end gap-4">
                 <div className="w-full md:w-auto">
-                    <p className="text-sm font-medium mb-2">Department</p>
-                        <Select onValueChange={setDepartment} defaultValue="all">
-                        <SelectTrigger className="w-full md:w-[240px]">
+                    <Label htmlFor="department-select">Department</Label>
+                    <Select onValueChange={val => { setSelectedDepartment(val); setSelectedCategory('all'); }} defaultValue="all">
+                        <SelectTrigger id="department-select" className="w-full md:w-[240px]">
                             <SelectValue placeholder="Select Department" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Departments</SelectItem>
-                            {allDepartments.filter(d => d !== 'all').map(dep => (
-                                <SelectItem key={dep} value={dep} className="capitalize">
-                                    {dep}
-                                </SelectItem>
+                            {Object.keys(departmentsData).map(dep => (
+                                <SelectItem key={dep} value={dep}>{dep}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
                  <div className="w-full md:w-auto">
-                    <p className="text-sm font-medium mb-2">Category</p>
-                     <Select onValueChange={setCategory} defaultValue="all">
-                        <SelectTrigger className="w-full md:w-[240px]">
+                    <Label htmlFor="category-select">Category</Label>
+                     <Select onValueChange={setSelectedCategory} value={selectedCategory} disabled={selectedDepartment === 'all'}>
+                        <SelectTrigger id="category-select" className="w-full md:w-[240px]">
                             <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Categories</SelectItem>
-                            {allCategories.filter(c => c !== 'all').map(cat => (
-                                <SelectItem key={cat} value={cat} className="capitalize">
-                                    {cat}
-                                </SelectItem>
+                            {categoriesForSelectedDept.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -149,11 +157,35 @@ export function BooksView() {
       </Card>
 
         {filteredBooks.length > 0 ? (
-             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredBooks.map((book) => (
-                    <BookCard key={book.id} book={book} onEdit={handleEditBook} onDelete={handleDeleteBook} onBorrow={() => borrowBook(book.id)} />
-                ))}
-            </div>
+            <Card>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Author</TableHead>
+                                <TableHead>Copies</TableHead>
+                                <TableHead><span className="sr-only">Actions</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredBooks.map((book) => (
+                                <TableRow key={book.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{book.title}</div>
+                                        <div className="text-sm text-muted-foreground">{book.category}</div>
+                                    </TableCell>
+                                    <TableCell>{book.author}</TableCell>
+                                    <TableCell>{book.availableCopies} / {book.totalCopies}</TableCell>
+                                    <TableCell className="text-right">
+                                        <BookActions book={book} onEdit={handleEditBook} onDelete={handleDeleteBook} onBorrow={() => borrowBook(book.id)} />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         ) : (
             <div className="text-center py-16 text-muted-foreground">
                 <p className="text-lg">No books found.</p>
@@ -165,63 +197,42 @@ export function BooksView() {
   );
 }
 
-
-function BookCard({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit: (book: BookType) => void; onDelete: (bookId: string) => void; onBorrow: () => void; }) {
+function BookActions({ book, onEdit, onDelete, onBorrow }: { book: BookType; onEdit: (book: BookType) => void; onDelete: (bookId: string) => void; onBorrow: () => void; }) {
   const { user } = useApp();
   
-  return (
-    <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
-      <CardHeader className="p-0 relative">
-        <Image
-          src={book.coverImage}
-          alt={`Cover of ${book.title}`}
-          width={300}
-          height={450}
-          className="w-full h-60 object-cover"
-          data-ai-hint={book.coverImageHint}
-        />
-        <Badge className="absolute top-2 left-2" variant={book.availableCopies > 0 ? 'secondary' : 'destructive'}>
-          {book.availableCopies > 0 ? 'Available' : 'Borrowed'}
-        </Badge>
-        {(user?.role === 'admin' || user?.role === 'librarian') && (
-            <div className="absolute top-2 right-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(book)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            <span>Edit</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDelete(book.id)} className="text-destructive">
-                            <Trash className="mr-2 h-4 w-4" />
-                            <span>Delete</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <div className="flex flex-wrap gap-1 mb-2">
-            <Badge variant="outline">{book.category}</Badge>
-            {book.department && <Badge variant="outline">{book.department}</Badge>}
-        </div>
-        <CardTitle className="font-headline text-lg mb-1 leading-tight">{book.title}</CardTitle>
-        <p className="text-sm text-muted-foreground">{book.author}</p>
-        <p className="text-xs text-muted-foreground mt-2">ISBN: {book.isbn}</p>
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button className="w-full" disabled={book.availableCopies === 0 || user?.role !== 'student'} onClick={onBorrow}>
-          {book.availableCopies > 0 ? 'Borrow Book' : 'Unavailable'}
+  if (user?.role === 'admin' || user?.role === 'librarian') {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(book)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(book.id)} className="text-destructive">
+                    <Trash className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+  }
+
+  if (user?.role === 'student') {
+    return (
+        <Button size="sm" disabled={book.availableCopies === 0} onClick={onBorrow}>
+          {book.availableCopies > 0 ? 'Borrow' : 'Unavailable'}
         </Button>
-      </CardFooter>
-    </Card>
-  );
+    )
+  }
+
+  return null;
 }
+
 
 const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookType>) => void; onClose: () => void; book: BookType | null }) => {
     const [formData, setFormData] = React.useState<Partial<BookType>>(
@@ -238,9 +249,17 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
         }
     );
 
+    const [selectedDepartment, setSelectedDepartment] = React.useState(book?.department || '');
+
+     const categoriesForSelectedDept = selectedDepartment
+        ? Object.values(departmentsData[selectedDepartment as keyof typeof departmentsData] || {}).flat()
+        : [];
+
+
     React.useEffect(() => {
         if (book) {
             setFormData(book);
+            setSelectedDepartment(book.department || '');
         } else {
              setFormData({
                 title: '', author: '', isbn: '', category: '', department: '',
@@ -248,12 +267,22 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
                 coverImage: `https://picsum.photos/seed/${Date.now()}/300/450`,
                 coverImageHint: 'book cover'
             });
+            setSelectedDepartment('');
         }
     }, [book]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
         setFormData({ ...formData, [name]: type === 'number' ? Number(value) : value });
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
+        setFormData({ ...formData, [name]: value });
+        if (name === 'department') {
+            setSelectedDepartment(value);
+            // Reset category when department changes
+            setFormData(prev => ({...prev, category: ''}));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -276,16 +305,30 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
                     <Input id="author" name="author" value={formData.author} onChange={handleChange} className="col-span-3" required />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="isbn" className="text-right">ISBN</Label>
-                    <Input id="isbn" name="isbn" value={formData.isbn} onChange={handleChange} className="col-span-3" />
+                    <Label htmlFor="department" className="text-right">Department</Label>
+                     <Select onValueChange={(val) => handleSelectChange('department', val)} value={formData.department}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             {Object.keys(departmentsData).map(dep => (
+                                <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="category" className="text-right">Category</Label>
-                    <Input id="category" name="category" value={formData.category} onChange={handleChange} className="col-span-3" required />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="department" className="text-right">Department</Label>
-                    <Input id="department" name="department" value={formData.department} onChange={handleChange} className="col-span-3" />
+                     <Select onValueChange={(val) => handleSelectChange('category', val)} value={formData.category} disabled={!selectedDepartment}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {categoriesForSelectedDept.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="publicationYear" className="text-right">Year</Label>
@@ -294,6 +337,10 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="totalCopies" className="text-right">Total Copies</Label>
                     <Input id="totalCopies" name="totalCopies" type="number" value={formData.totalCopies} onChange={handleChange} className="col-span-3" required />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="isbn" className="text-right">ISBN</Label>
+                    <Input id="isbn" name="isbn" value={formData.isbn} onChange={handleChange} className="col-span-3" />
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>

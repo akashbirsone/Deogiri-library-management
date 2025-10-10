@@ -244,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const userDocRef = doc(firestore, "users", studentProfile.uid);
     const bookDocRef = doc(firestore, "books", bookId);
-    const bookUpdateData = { availableCopies: bookToBorrow.totalCopies - 1 };
+    const bookUpdateData = { availableCopies: bookToBorrow.availableCopies - 1 };
     const userUpdateData = { borrowHistory: updatedHistory };
 
     setDoc(userDocRef, userUpdateData, { merge: true })
@@ -401,3 +401,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
