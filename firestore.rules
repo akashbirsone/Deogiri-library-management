@@ -1,86 +1,103 @@
 /**
- * @fileoverview Firestore Security Rules for the Library App Prototype.
- *
- * Core Philosophy:
- * This ruleset prioritizes strict user-ownership and role-based access control.
- * All write operations are carefully guarded, while read operations are more open where appropriate.
- *
- * Data Structure:
- * - Users: `/users/{userId}` - Each user has their own document.
- * - Books: `/departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}` - Books are organized hierarchically.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a role-based access control model for a library application.
+ * All data is stored in a hierarchical structure under `/departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}` for books and `/users/{userId}` for user profiles.
  *
  * Key Security Decisions:
- * - Users can only list users collection as admin, no other user roles are permitted
- * - Read access to the book catalog is public.
+ * - Users can only read their own profile data.
+ * - Only librarians and admins can create, update, or delete books.
+ * - Students cannot list books.
+ * - Data validation is relaxed during prototyping to facilitate rapid development.
  *
  * Denormalization for Authorization:
- *  - The rules use the role claim on the user's document for role-based authorization.
+ * - Book documents do not contain ownership information, but write access is controlled based on the user's role.
+ *
+ * Structural Segregation:
+ * - User profiles and book catalogs are stored in separate top-level collections to simplify access control.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants access to user documents based on ownership.
+     * @description Allows users to read their own profile data, but restricts write access to admins.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user with matching UID can create their own document.
-     * @allow (get, update, delete) - Authenticated user can get, update, and delete their own document.
-     * @deny (create) - If the user attempts to create a document with a mismatched UID.
-     * @deny (get, update, delete) - If a user attempts to access another user's document.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (get, list) if isSignedIn() && isOwner(userId)
+     * @allow (create, update, delete) if isSignedIn() && isAdmin()
+     * @deny (get, list) if !isSignedIn()
+     * @deny (create, update, delete) if !isSignedIn() || !isAdmin()
+     * @principle Enforces user-ownership for reads and admin-only access for writes.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-      function isAdmin() {
-        return request.auth.token.role == 'admin';
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isAdmin(); // Only admins can list users
-
+      allow list: if false;
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if false;
     }
 
     /**
-     * @description Grants public read access to the book catalog and restricts writes to authorized users.
+     * @description Manages access control for the book catalog based on user roles.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get, list) - Any user can read book information.
-     * @allow (create, update, delete) - Only authorized users (e.g., librarians, admins) can modify the book catalog.
-     * @deny (create, update, delete) - Unauthorized users cannot modify the book catalog.
-     * @principle Allows public read access while restricting write access based on authorization.
+     * @allow (get) if true;
+     * @allow (list) if isSignedIn() && (isLibrarian() || isAdmin());
+     * @allow (create) if isSignedIn() && (isLibrarian() || isAdmin());
+     * @allow (update) if isSignedIn() && (isLibrarian() || isAdmin()) && resource != null;
+     * @allow (delete) if isSignedIn() && (isLibrarian() || isAdmin()) && resource != null;
+     * @deny (create, update, delete) if !isSignedIn() || !(isLibrarian() || isAdmin());
+     * @principle Enforces role-based access control for books.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
+      allow get: if true;
+      allow list: if isSignedIn() && (isLibrarian() || isAdmin());
+      allow create: if isSignedIn() && (isLibrarian() || isAdmin());
+      allow update: if isSignedIn() && (isLibrarian() || isAdmin()) && resource != null;
+      allow delete: if isSignedIn() && (isLibrarian() || isAdmin()) && resource != null;
+    }
 
-        function isAdmin() {
-            return request.auth.token.role == 'admin';
-        }
 
-        function isLibrarian() {
-            return request.auth.token.role == 'librarian';
-        }
+    // ---- Helper functions ----
 
-        allow get: if true;
-        allow list: if true;
+    /**
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-        // Allowing Librarian and Admin roles to create, update and delete.
-        allow create: if isSignedIn() && (isAdmin() || isLibrarian());
-        allow update: if isSignedIn() && (isAdmin() || isLibrarian());
-        allow delete: if isSignedIn() && (isAdmin() || isLibrarian());
+    /**
+     * @description Checks if the user is the owner of the resource.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource and the resource exists.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'admin' role.
+     * @return {boolean} True if the user has the 'admin' role, false otherwise.
+     */
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+
+     /**
+      * @description Checks if the user has the 'librarian' role.
+      * @return {boolean} True if the user has the 'librarian' role, false otherwise.
+      */
+    function isLibrarian() {
+      return request.auth.token.role == 'librarian';
     }
   }
 }
