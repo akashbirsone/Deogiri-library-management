@@ -1,43 +1,76 @@
-
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset implements a role-based access control model with an admin override.
+ *
+ * Data Structure:
+ * The database is structured hierarchically with departments, courses, semesters, subjects, and books.
+ * /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
+ * /users/{userId}
+ *
+ * Key Security Decisions:
+ * - Admin users (UID 'Dzl57IC8VjVuwXwQwgNgHxssz3u2') have full read and write access to all data.
+ * - All other users (students) have read-only access to the book catalog.
+ * - Users can only create their own user document, and cannot modify or delete it after creation.
+ *
+ * Denormalization for Authorization:
+ * - The admin role is hardcoded in the rules. No denormalization is required for this simple role-based check.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isStudent() {
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    /**
+     * @description Checks if the current user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
-    function isAdmin() {
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    function isLibrarian() {
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'librarian';
-    }
+
+    /**
+     * @description Checks if the current user is the owner of the resource.
+     */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Rules for the 'users' collection
+    /**
+     * @description Checks if the current user is the admin.
+     */
+    function isAdmin() {
+      return request.auth.uid == 'Dzl57IC8VjVuwXwQwgNgHxssz3u2';
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user123' creates their profile document at /users/user123.
+     * @deny (create) User with UID 'user123' attempts to create a profile document at /users/user456.
+     * @deny (update) User attempts to modify another user's profile.
+     * @deny (delete) User attempts to delete their profile.
+     * @principle Enforces document ownership for creation and prevents unauthorized modifications.
+     */
     match /users/{userId} {
-      allow create: if request.auth.uid != null;
-      allow read: if isOwner(userId) || isAdmin() || isLibrarian();
-      allow update: if isOwner(userId) || isAdmin() || isLibrarian();
-      allow delete: if isAdmin();
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if false;
+      allow delete: if false;
     }
-    
-    // Rules for the book catalog
+
+    /**
+     * @description Rules for the book catalog (departments, courses, semesters, subjects, books).
+     * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
+     * @allow (get, list) Any user can read book information.
+     * @allow (create, update, delete) Only the admin user can modify the book catalog.
+     * @deny (create, update, delete) Non-admin users cannot modify the book catalog.
+     * @principle Allows public read access and restricts write access to the admin.
+     */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-      allow read: if request.auth.uid != null;
-      allow create: if isAdmin() || isLibrarian();
-      allow update: if isAdmin() || isLibrarian();
-      allow delete: if isAdmin() || isLibrarian();
-    }
-    
-    match /{path=**}/books/{bookId} {
-       allow list: if request.auth.uid != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
-
-    
