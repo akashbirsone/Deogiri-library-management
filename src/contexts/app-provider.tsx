@@ -402,74 +402,71 @@ const returnBook = async (bookId: string) => {
     }, [firestore, booksPath]);
 
     const seedDatabase = async () => {
-      if (!firestore || !user || user.role !== 'admin') {
-          toast({ variant: 'destructive', title: 'Permission Denied' });
-          return;
-      }
-  
-      // 1. Fetch all existing books to avoid duplication
-      const booksQuery = query(collectionGroup(firestore, 'books'));
-      const existingBooksSnapshot = await getDocs(booksQuery);
-      const existingBookPaths = new Set(existingBooksSnapshot.docs.map(d => d.ref.path));
-  
-      const batch = writeBatch(firestore);
-      let booksAddedCount = 0;
-  
-      // 2. Iterate through the defined structure
-      for (const dept of departments) {
-          for (const course of dept.courses) {
-              for (const semester of course.semesters) {
-                  for (const subject of semester.subjects) {
-                      const bookPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
-                      
-                      // Check if a book for this subject already exists. This is a simplified check.
-                      // A more robust check might query for books with this subject.
-                      const bookExists = [...existingBookPaths].some(path => path.startsWith(bookPath));
-                      
-                      // 3. If no book exists for this subject, add a placeholder
-                      if (!bookExists) {
-                          const newBook: Omit<Book, 'id'> = {
-                              title: "", // Placeholder
-                              author: "", // Placeholder
-                              subject: subject.name,
-                              isAvailable: true,
-                              coverImage: "", // Placeholder
-                              coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
-                              addedBy: user.email || 'admin',
-                              addedDate: new Date().toISOString(),
-                              department: dept.id,
-                              course: course.id,
-                              semester: semester.id,
-                          };
-                          const newBookRef = doc(collection(firestore, bookPath));
-                          batch.set(newBookRef, newBook);
-                          booksAddedCount++;
-                      }
-                  }
-              }
-          }
-      }
-  
-      if (booksAddedCount === 0) {
-          toast({
-              title: "Database is Already Up-to-date",
-              description: "No new book placeholders were needed.",
-          });
-          return;
-      }
-  
-      try {
-          await batch.commit();
-          toast({
-              title: "Database Seeding Complete",
-              description: `${booksAddedCount} new book placeholder(s) have been added.`,
-          });
-      } catch (error) {
-          const permissionError = new FirestorePermissionError({ path: '/departments', operation: 'create' });
-          errorEmitter.emit('permission-error', permissionError);
-          throw error;
-      }
-  };
+        if (!firestore || !user || user.role !== 'admin') {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
+    
+        const booksQuery = query(collectionGroup(firestore, 'books'));
+        const existingBooksSnapshot = await getDocs(booksQuery);
+        const existingBookPaths = new Set(existingBooksSnapshot.docs.map(d => d.ref.path));
+    
+        const batch = writeBatch(firestore);
+        let booksAddedCount = 0;
+    
+        for (const dept of departments) {
+            for (const course of dept.courses) {
+                for (const semester of course.semesters) {
+                    for (const subject of semester.subjects) {
+                        const bookPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
+                        
+                        const bookExists = [...existingBookPaths].some(path => path.startsWith(bookPath));
+                        
+                        if (!bookExists) {
+                            const newBook: Omit<Book, 'id'> = {
+                                title: "", 
+                                author: "", 
+                                subject: subject.name,
+                                isAvailable: true,
+                                coverImage: "",
+                                coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
+                                addedBy: user.email || 'admin',
+                                addedDate: new Date().toISOString(),
+                                department: dept.id,
+                                course: course.id,
+                                semester: semester.id,
+                            };
+                            const newBookRef = doc(collection(firestore, bookPath));
+                            batch.set(newBookRef, newBook);
+                            booksAddedCount++;
+                        }
+                    }
+                }
+            }
+        }
+    
+        if (booksAddedCount === 0) {
+            toast({
+                title: "Database is Already Up-to-date",
+                description: "No new book placeholders were needed.",
+            });
+            return;
+        }
+    
+        batch.commit().then(() => {
+            toast({
+                title: "Database Seeding Complete",
+                description: `${booksAddedCount} new book placeholder(s) have been added.`,
+            });
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: '/departments',
+                operation: 'create',
+                requestResourceData: { info: 'Batch write for seeding database.' }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
 
 
   return (
@@ -507,3 +504,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
