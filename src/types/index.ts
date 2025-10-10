@@ -20,6 +20,7 @@ export interface User {
 
 export interface Book {
   id: string;
+  path: string;
   title: string;
   author: string;
   subject: string; 

@@ -85,12 +85,11 @@ export function BooksView() {
 
 
   const handleFormSubmit = async (bookData: Partial<BookType>) => {
-    const path = getPath(formSubject);
-    if (!user || !path || !formSubject) return;
+    if (!user || !formSubject) return;
 
-    if (editingBook && "id" in editingBook) {
+    if (editingBook && editingBook.path) {
       await updateBook(
-        `${path}/${editingBook.id}`,
+        editingBook.path,
         { ...editingBook, ...bookData }
       );
       toast({
@@ -98,7 +97,10 @@ export function BooksView() {
         description: `${bookData.title} has been updated.`,
       });
     } else {
-      const newBook: Omit<Book, "id"> = {
+        const path = getPath(formSubject);
+        if(!path) return;
+
+      const newBook: Omit<Book, "id" | "path"> = {
         title: bookData.title || "",
         author: bookData.author || "",
         subject: formSubject,
@@ -133,9 +135,7 @@ export function BooksView() {
   };
   
   const handleDeleteBook = async (book: BookType) => {
-      const path = getPath(book.subject);
-      if (!path) return;
-      await deleteBook(`${path}/${book.id}`);
+      await deleteBook(book.path);
       toast({ title: "Book Deleted", variant: "destructive" });
   }
 
@@ -279,11 +279,7 @@ export function BooksView() {
                                     <Button
                                       size="sm"
                                       disabled={!book.isAvailable}
-                                      onClick={() => {
-                                        const bookPath = getPath(book.subject);
-                                        if(!bookPath) return;
-                                        borrowBook(`${bookPath}/${book.id}`)
-                                      }}
+                                      onClick={() => borrowBook(book.id)}
                                     >
                                       Borrow
                                     </Button>
@@ -296,6 +292,9 @@ export function BooksView() {
                     <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
                       <BookOpenCheck className="mx-auto h-12 w-12" />
                       <p className="mt-4">No books found for this subject.</p>
+                      {isAdmin && (
+                        <p className="text-xs mt-2">Click 'Add Book' to get started.</p>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -430,5 +429,3 @@ const BookForm = ({
     </DialogContent>
   );
 };
-
-    

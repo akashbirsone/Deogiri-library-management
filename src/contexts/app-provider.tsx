@@ -37,9 +37,9 @@ interface AppContextType {
   signInWithGithub: () => Promise<void>;
   emailLogin: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  borrowBook: (bookPath: string) => Promise<void>;
+  borrowBook: (bookId: string) => Promise<void>;
   returnBook: (bookId: string) => Promise<void>;
-  addBook: (path: string, book: Omit<Book, 'id'>) => Promise<void>;
+  addBook: (path: string, book: Omit<Book, 'id' | 'path'>) => Promise<void>;
   updateBook: (path: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (path: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
@@ -211,64 +211,60 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
   
- const borrowBook = async (bookPath: string) => {
+ const borrowBook = async (bookId: string) => {
     if (!user || user.role !== 'student' || !firestore) {
       toast({ variant: "destructive", title: "Action Not Allowed", description: "Only students can borrow books." });
       return;
     }
 
     const studentProfile = user as Student;
-    const bookDocRef = doc(firestore, bookPath);
+    const bookToBorrow = books.find(b => b.id === bookId);
     
-    try {
-        const bookDoc = await getDoc(bookDocRef);
-        if (!bookDoc.exists()) {
-            toast({ variant: "destructive", title: "Error", description: "Book not found." });
-            return;
-        }
+    if (!bookToBorrow) {
+        toast({ variant: "destructive", title: "Error", description: "Book not found." });
+        return;
+    }
 
-        const bookToBorrow = { id: bookDoc.id, ...bookDoc.data() } as Book;
+    if (!bookToBorrow.isAvailable) {
+        toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
+        return;
+    }
 
-        if (!bookToBorrow.isAvailable) {
-            toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
-            return;
-        }
+    const bookDocRef = doc(firestore, bookToBorrow.path);
 
-        const today = new Date();
-        const dueDate = add(today, { days: 14 });
+    const today = new Date();
+    const dueDate = add(today, { days: 14 });
 
-        const newBorrowItem: BorrowHistoryItem = {
-            bookId: bookToBorrow.id,
-            bookPath: bookPath,
-            borrowDate: formatISO(today),
-            dueDate: formatISO(dueDate),
-        };
+    const newBorrowItem: BorrowHistoryItem = {
+        bookId: bookToBorrow.id,
+        bookPath: bookToBorrow.path,
+        borrowDate: formatISO(today),
+        dueDate: formatISO(dueDate),
+    };
 
-        const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
+    const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
 
-        const batch = writeBatch(firestore);
-        const userDocRef = doc(firestore, "users", studentProfile.uid);
-        
-        batch.update(bookDocRef, { isAvailable: false });
-        batch.update(userDocRef, { borrowHistory: updatedHistory });
+    const batch = writeBatch(firestore);
+    const userDocRef = doc(firestore, "users", studentProfile.uid);
+    
+    batch.update(bookDocRef, { isAvailable: false });
+    batch.update(userDocRef, { borrowHistory: updatedHistory });
 
-        await batch.commit();
-
-        setUser({ ...studentProfile, borrowHistory: updatedHistory });
-        
-        toast({
-            title: "Book Borrowed!",
-            description: `${bookToBorrow.title} has been issued. Due date: ${format(dueDate, "PPP")}.`,
-        });
-
-    } catch (error: any) {
+    await batch.commit().catch(async (error: any) => {
         const permissionError = new FirestorePermissionError({
-            path: bookPath,
+            path: bookDocRef.path,
             operation: 'update',
             requestResourceData: { isAvailable: false },
           });
           errorEmitter.emit('permission-error', permissionError);
-    }
+    });
+
+    setUser({ ...studentProfile, borrowHistory: updatedHistory });
+    
+    toast({
+        title: "Book Borrowed!",
+        description: `${bookToBorrow.title} has been issued. Due date: ${format(dueDate, "PPP")}.`,
+    });
 };
 
 
@@ -330,7 +326,7 @@ const returnBook = async (bookId: string) => {
 };
 
   
-    const addBook = async (path: string, book: Omit<Book, 'id'>) => {
+    const addBook = async (path: string, book: Omit<Book, 'id' | 'path'>) => {
         if (!firestore) return;
         const booksCollection = collection(firestore, path);
         addDoc(booksCollection, book).catch(async (error) => {
@@ -386,7 +382,7 @@ const returnBook = async (bookId: string) => {
         const booksQuery = query(collectionGroup(firestore, 'books'));
 
         const unsub = onSnapshot(booksQuery, (snapshot) => {
-            const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
+            const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
             setBooks(booksData);
             setLoading(false);
         }, (error) => {
@@ -416,12 +412,12 @@ const returnBook = async (bookId: string) => {
                       const bookCollectionPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
                       
                       try {
-                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name));
+                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
                           const existingBookSnapshot = await getDocs(existingBookQuery);
   
                           if (existingBookSnapshot.empty) {
                               const newBookRef = doc(collection(firestore, bookCollectionPath));
-                              const newBookData: Omit<Book, 'id'> = {
+                              const newBookData: Omit<Book, 'id' | 'path'> = {
                                   title: subject.name,
                                   author: "Faculty of " + dept.name,
                                   subject: subject.name,
@@ -437,12 +433,11 @@ const returnBook = async (bookId: string) => {
                               batch.set(newBookRef, newBookData);
                               booksAddedCount++;
                           } else {
-                              existingBookSnapshot.docs.forEach(bookDoc => {
-                                  if (bookDoc.data().coverImage !== subject.coverImage) {
-                                      batch.update(bookDoc.ref, { coverImage: subject.coverImage });
-                                      booksUpdatedCount++;
-                                  }
-                              });
+                              const bookDoc = existingBookSnapshot.docs[0];
+                              if (bookDoc.data().coverImage !== subject.coverImage) {
+                                  batch.update(bookDoc.ref, { coverImage: subject.coverImage });
+                                  booksUpdatedCount++;
+                              }
                           }
                       } catch (e: any) {
                           const permissionError = new FirestorePermissionError({
@@ -518,5 +513,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
