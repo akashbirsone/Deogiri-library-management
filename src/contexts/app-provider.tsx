@@ -76,16 +76,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               const userData = userDoc.data() as User;
               setUser(userData);
-              // Update last login timestamp for existing user
               updateDoc(userDocRef, { lastLogin: serverTimestamp() }).catch(e => console.error("Failed to update last login", e));
 
             } else {
-              // This is a new user, create their profile
               const isAdmin = fbUser.email === "deogiri_admin@college.com";
               const newUserRole = isAdmin ? "admin" : "student";
               
               const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
-                name: fbUser.displayName || "New User",
+                name: fbUser.displayName || fbUser.email?.split('@')[0] || "New User",
                 email: fbUser.email,
                 role: newUserRole,
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
@@ -93,9 +91,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 lastLogin: serverTimestamp(),
               };
 
+              if (newUserRole === 'student') {
+                (newUser as Student).borrowHistory = [];
+                (newUser as Student).fines = 0;
+              }
+
               setDoc(userDocRef, newUser)
                 .then(() => {
-                  setUser({ uid: fbUser.uid, ...newUser });
+                  setUser({ uid: fbUser.uid, ...newUser } as User);
                 })
                 .catch(async (serverError) => {
                   const permissionError = new FirestorePermissionError({
@@ -109,9 +112,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAuthUser(null);
             setUser(null);
-            setUsers([]); // Clear users on logout
-            setBooks([]); // Clear books on logout
-             // When logging out, ensure we are on the home page.
+            setUsers([]);
+            setBooks([]);
             if (window.location.pathname !== '/') {
               router.push('/');
             }
@@ -134,7 +136,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
     };
     
-    // All users can read books
     const booksCollection = collection(firestore, 'books');
     const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
         const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
@@ -145,7 +146,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     let unsubUsers = () => {};
-    // Only admins and librarians can read all users
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
         unsubUsers = onSnapshot(usersCollection, (snapshot) => {
@@ -192,7 +192,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const emailLogin = async (email: string, password: string) => {
     if (!auth) throw new Error("Firebase Auth not initialized");
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+        // Re-throw the error to be handled by the calling component
+        throw error;
+    }
   }
 
   const logout = async () => {
@@ -202,6 +207,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setAuthUser(null);
       setUser(null);
       setUsers([]);
+      setBooks([]);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch(error: any) {
        console.error("Logout failed:", error);
@@ -285,7 +291,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const daysOverdue = differenceInDays(today, dueDate);
 
             if (daysOverdue > 0) {
-                fine = daysOverdue * 10; // 10 INR per day
+                fine = daysOverdue * 10;
             }
             return { ...item, returnDate: formatISO(today), fine: fine };
         }
@@ -401,5 +407,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    

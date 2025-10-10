@@ -28,33 +28,41 @@ export default function LoginPage() {
     }
     try {
         await emailLogin(email, password);
-        // Successful login is handled by onAuthStateChanged in AppProvider
     } catch (error: any) {
+        let title = "Login Failed";
+        let description = "An unexpected error occurred. Please try again.";
+
+        switch (error.code) {
+            case 'auth/invalid-credential':
+                title = "Invalid Credentials";
+                description = "The email or password you entered is incorrect. Please check and try again.";
+                break;
+            case 'auth/too-many-requests':
+                title = "Too Many Attempts";
+                description = "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later.";
+                break;
+            case 'auth/user-not-found':
+                 title = "User Not Found";
+                 description = "No user found with this email address. Please sign up or check the email you entered.";
+                 break;
+        }
+
          toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: error.message || "An unexpected error occurred.",
+            title: title,
+            description: description,
         });
     }
   }
 
-  // FIX: This function is called directly from the "Continue with Google" button's onClick event.
-  // Calling signInWithPopup as a direct result of a user interaction (like a click)
-  // is the key to preventing browsers from blocking the authentication popup.
-  // If this were called inside a useEffect or asynchronously without a preceding user click,
-  // the browser would likely block it as an unwanted popup.
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      // Successful login is handled by the onAuthStateChanged listener in AppProvider,
-      // which will trigger the redirect to the dashboard.
     } catch (error) {
-      // Errors are caught and displayed via toast notifications.
       console.error("Popup sign-in error", error);
     }
   };
 
-  // FIX: This follows the same user-click pattern for GitHub to avoid the popup blocker.
   const handleGithubSignIn = async () => {
     try {
       await signInWithGithub();
