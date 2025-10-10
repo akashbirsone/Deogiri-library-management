@@ -3,25 +3,21 @@ export interface Subject {
   name: string;
   coverImage: string;
 }
-
 export interface Semester {
   id: string;
   name: string;
   subjects: Subject[];
 }
-
 export interface Course {
   id: string;
   name: string;
   semesters: Semester[];
 }
-
 export interface Department {
   id: string;
   name: string;
   courses: Course[];
 }
-
 export const departments: Department[] = [
   {
     id: "general",
@@ -346,5 +342,3 @@ export const departments: Department[] = [
     ],
   },
 ];
-
-    
