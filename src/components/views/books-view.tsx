@@ -249,7 +249,7 @@ export function BooksView() {
                         <CardHeader className="p-0">
                           <div className="relative aspect-[3/4]">
                             <Image
-                              src={book.coverImage}
+                              src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
                               alt={book.title}
                               fill
                               className="object-cover"
