@@ -409,30 +409,24 @@ const returnBook = async (bookId: string) => {
       let booksAddedCount = 0;
       const batch = writeBatch(firestore);
   
-      // Get all existing books to avoid duplicates by subject
-      const allBooksSnapshot = await getDocs(query(collectionGroup(firestore, 'books')));
-      const existingSubjects = new Set(allBooksSnapshot.docs.map(doc => doc.data().subject));
-
       for (const dept of departments) {
           for (const course of dept.courses) {
               for (const semester of course.semesters) {
                   for (const subject of semester.subjects) {
-                      
                       const bookCollectionPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
                       
                       try {
-                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
+                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name));
                           const existingBookSnapshot = await getDocs(existingBookQuery);
   
                           if (existingBookSnapshot.empty) {
-                              // Book does not exist, create it
                               const newBookRef = doc(collection(firestore, bookCollectionPath));
                               const newBookData: Omit<Book, 'id'> = {
                                   title: subject.name,
                                   author: "Faculty of " + dept.name,
                                   subject: subject.name,
                                   isAvailable: true,
-                                  coverImage: subject.coverImage || `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                                  coverImage: subject.coverImage || "",
                                   coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
                                   addedBy: user.email || 'admin',
                                   addedDate: new Date().toISOString(),
@@ -443,12 +437,12 @@ const returnBook = async (bookId: string) => {
                               batch.set(newBookRef, newBookData);
                               booksAddedCount++;
                           } else {
-                              // Book exists, update its cover image if different
-                              const bookDoc = existingBookSnapshot.docs[0];
-                              if (bookDoc.data().coverImage !== subject.coverImage && subject.coverImage) {
-                                  batch.update(bookDoc.ref, { coverImage: subject.coverImage });
-                                  booksUpdatedCount++;
-                              }
+                              existingBookSnapshot.docs.forEach(bookDoc => {
+                                  if (bookDoc.data().coverImage !== subject.coverImage) {
+                                      batch.update(bookDoc.ref, { coverImage: subject.coverImage });
+                                      booksUpdatedCount++;
+                                  }
+                              });
                           }
                       } catch (e: any) {
                           const permissionError = new FirestorePermissionError({
@@ -481,7 +475,7 @@ const returnBook = async (bookId: string) => {
       } catch (e: any) {
           const permissionError = new FirestorePermissionError({
               path: '/departments',
-              operation: 'create', // Operation is a batch write, so 'create' is a stand-in
+              operation: 'create',
               requestResourceData: { info: 'Batch write for seeding/updating database.' }
           });
           errorEmitter.emit('permission-error', permissionError);
@@ -524,3 +518,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
