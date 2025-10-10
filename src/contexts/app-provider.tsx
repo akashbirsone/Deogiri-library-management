@@ -400,6 +400,8 @@ const returnBook = async (bookId: string) => {
         }
 
         const batch = writeBatch(firestore);
+        const authors = ["Dr. R. S. Aggarwal", "E. Balagurusamy", "Yashavant Kanetkar", "William Stallings", "Andrew S. Tanenbaum", "Abraham Silberschatz"];
+        let authorIndex = 0;
 
         for (const dept of departments) {
             for (const course of dept.courses) {
@@ -409,21 +411,31 @@ const returnBook = async (bookId: string) => {
                         
                         const newBook: Omit<Book, 'id'> = {
                             title: subject.name,
-                            author: `Dr. A. P. J. Abdul Kalam`, // Generic author
+                            author: authors[authorIndex % authors.length],
                             subject: subject.name,
                             isAvailable: true,
                             coverImage: `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
-                            coverImageHint: subject.name,
+                            coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
                             addedBy: user.email || 'admin',
                             addedDate: new Date().toISOString(),
+                            department: dept.id,
+                            course: course.id,
+                            semester: semester.id,
                         };
                         const newBookRef = doc(collection(firestore, bookPath));
                         batch.set(newBookRef, newBook);
+                        authorIndex++;
                     }
                 }
             }
         }
-        await batch.commit();
+        try {
+            await batch.commit();
+        } catch (error) {
+            const permissionError = new FirestorePermissionError({ path: '/departments', operation: 'create' });
+            errorEmitter.emit('permission-error', permissionError);
+            throw error;
+        }
     };
 
 
@@ -462,4 +474,3 @@ export const useApp = () => {
   }
   return context;
 };
-

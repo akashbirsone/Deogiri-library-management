@@ -72,13 +72,12 @@ export function BooksView() {
     return `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}/subjects/${subjectName}/books`;
   }
   
-  // Effect to update the book path for the listener in AppProvider
   React.useEffect(() => {
     if (selectedDeptId && selectedCourseId && selectedSemesterId) {
         const fullPath = `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}`;
         setBooksPath(fullPath);
     } else {
-        setBooksPath(null); // Clear path if not fully selected
+        setBooksPath(null); 
     }
   }, [selectedDeptId, selectedCourseId, selectedSemesterId, setBooksPath]);
 
@@ -97,7 +96,7 @@ export function BooksView() {
         description: `${bookData.title} has been updated.`,
       });
     } else {
-      const newBook: Omit<BookType, "id"> = {
+      const newBook: Omit<Book, "id"> = {
         title: bookData.title || "",
         author: bookData.author || "",
         subject: formSubject,
@@ -110,6 +109,9 @@ export function BooksView() {
         coverImageHint: formSubject,
         addedBy: user.email || "unknown",
         addedDate: new Date().toISOString(),
+        department: selectedDeptId!,
+        course: selectedCourseId!,
+        semester: selectedSemesterId!
       };
       await addBook(path, newBook);
       toast({
@@ -326,6 +328,15 @@ export function BooksView() {
                   <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
                     <BookOpenCheck className="mx-auto h-12 w-12" />
                     <p className="mt-4">No books found for this subject.</p>
+                     {(user?.role === "admin" || user?.role === "librarian") && (
+                        <Button
+                            variant="link"
+                            className="mt-2"
+                            onClick={() => openAddBookForm(subject.name)}
+                        >
+                            Add the first book
+                        </Button>
+                     )}
                   </div>
                 )}
               </div>
@@ -369,12 +380,12 @@ const BookForm = ({
       setFormData(book);
     } else {
       setFormData({
-        title: "",
+        title: subject, // Pre-fill title with subject
         author: "",
         isAvailable: true,
       });
     }
-  }, [book]);
+  }, [book, subject]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

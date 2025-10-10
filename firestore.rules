@@ -1,62 +1,60 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description This ruleset enforces a role-based access control model.
-     * @dataStructure Users are stored in the /users/{userId} collection, and books are stored under the /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} path.
-     * @keySecurityDecisions
-     *   - Only authenticated users can list users.
-     *   - Data shape is not strictly enforced during this phase.
-     */
-
-    /**
-     * @description Controls access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) User with matching {userId} can create their own profile.
-     * @allow (get) Any authenticated user can get any user profile.
-     * @deny (create) User attempts to create a profile with a mismatched {userId}.
-     * @deny (update) User attempts to modify a different user's profile.
-     * @principle Enforces ownership for profile creation and restricts updates to the owner.
-     */
-    match /users/{userId} {
-      // Helper function to check if the requesting user is the owner of the profile.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if false;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // The admin UID is hardcoded for this specific project.
+      return request.auth.uid == 'Dzl57IC8VjVuwXwQwgNgHxssz3u2';
     }
 
-    /**
-     * @description Manages access to the library's book catalog.
-     * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get) Any user can read book information.
-     * @allow (list) Any user can browse the book catalog.
-     * @deny (create) Only authenticated users should be able to add books. Additional authorization may be needed.
-     * @deny (update) Only authorized users can modify book details.
-     * @deny (delete) Restricts book deletion to authorized users only.
-     * @principle Provides public read access while restricting write access to authorized users.
-     */
+    function isLibrarian() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'librarian';
+    }
+
+    function isStudent() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    function isAuthorized() {
+      return isAdmin() || isLibrarian();
+    }
+
+    match /users/{userId} {
+      allow create: if request.auth.uid != null;
+      allow read, update: if isOwner(userId) || isAuthorized();
+      allow delete: if isAdmin();
+      allow list: if isAuthorized();
+    }
+
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if false;
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if isAuthorized();
+    }
+    
+    match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId} {
+       allow read: if request.auth.uid != null;
+       allow write: if isAuthorized();
+    }
+    
+     match /departments/{deptId}/courses/{courseId}/semesters/{semId} {
+       allow read: if request.auth.uid != null;
+       allow write: if isAuthorized();
+    }
+    
+     match /departments/{deptId}/courses/{courseId} {
+       allow read: if request.auth.uid != null;
+       allow write: if isAuthorized();
+    }
+    
+     match /departments/{deptId} {
+       allow read: if request.auth.uid != null;
+       allow write: if isAuthorized();
     }
   }
 }

@@ -60,7 +60,6 @@ export const departments: Department[] = [
               { name: "Programming in C" },
               { name: "Digital Electronics" },
               { name: "Mathematics-I" },
-              { name: "Communication Skills" },
             ],
           },
           {
@@ -71,7 +70,6 @@ export const departments: Department[] = [
               { name: "OOP in C++" },
               { name: "Computer Organization" },
               { name: "Mathematics-II" },
-              { name: "Environmental Studies" },
             ],
           },
           {
@@ -282,7 +280,6 @@ export const departments: Department[] = [
                     { name: "Business Organisation" },
                     { name: "Business Economics" },
                     { name: "Business Communication" },
-                    { name: "Environmental Studies" },
                 ],
             },
             {
@@ -293,7 +290,6 @@ export const departments: Department[] = [
                     { name: "Company Law" },
                     { name: "Business Math" },
                     { name: "Statistics" },
-                    { name: "Computer Applications" },
                 ],
             },
             {
@@ -304,7 +300,6 @@ export const departments: Department[] = [
                     { name: "Income Tax Law" },
                     { name: "Business Finance" },
                     { name: "Auditing" },
-                    { name: "E-Commerce" },
                 ],
             },
             {
@@ -315,7 +310,6 @@ export const departments: Department[] = [
                     { name: "GST" },
                     { name: "Banking & Insurance" },
                     { name: "Management Accounting" },
-                    { name: "Entrepreneurship" },
                 ],
             },
             {
@@ -326,7 +320,6 @@ export const departments: Department[] = [
                     { name: "Financial Management" },
                     { name: "International Trade" },
                     { name: "HR Management" },
-                    { name: "Project-I" },
                 ],
             },
             {
@@ -336,7 +329,7 @@ export const departments: Department[] = [
                     { name: "Advanced Costing" },
                     { name: "Financial Markets" },
                     { name: "Strategic Management" },
-                    { name: "Project-II" },
+                    { name: "Project Report" },
                 ],
             },
         ],

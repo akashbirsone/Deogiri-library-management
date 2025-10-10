@@ -8,32 +8,33 @@ export interface User {
   role: Role;
   avatar: string;
   studentId?: string;
-  department?: string; // This will now be the department ID
-  course?: string; // This will be the course ID
+  department?: string; 
+  course?: string;
   contactNumber?: string;
   yearOfStudy?: string;
   borrowHistory?: BorrowHistoryItem[];
   fines?: number;
-  createdAt?: any; // Should be Firestore Timestamp
-  lastLogin?: any; // Should be Firestore Timestamp
+  createdAt?: any; 
+  lastLogin?: any; 
 }
 
 export interface Book {
   id: string;
   title: string;
   author: string;
-  subject: string; // "Category" is now "Subject"
-  isAvailable: boolean; // Replaces copy counting
+  subject: string; 
+  isAvailable: boolean;
   coverImage: string;
   coverImageHint: string;
   addedBy?: string;
   addedDate?: string;
-  // Note: department, course, semester are part of the path now
+  department: string;
+  course: string;
+  semester: string;
 }
 
 export interface BorrowHistoryItem {
   bookId: string;
-  // We need to store the full path to the book for context
   bookPath: string; 
   borrowDate: string;
   returnDate?: string;
