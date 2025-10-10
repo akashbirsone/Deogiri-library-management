@@ -2,84 +2,108 @@
  * @fileoverview Firestore Security Rules for Prototyping.
  *
  * Core Philosophy:
- * This ruleset prioritizes strict authorization and assumes a flexible data shape for rapid prototyping.
- * It enforces user-ownership where appropriate and defaults to denying access unless explicitly granted.
+ * This ruleset prioritizes strict authorization based on user roles and ownership, while relaxing data validation constraints
+ * to enable rapid prototyping.  It enforces who can access what, but does not enforce the precise schema of data.
  *
  * Data Structure:
- * - Users: Stored in `/users/{userId}`. Each user document contains profile information.
- * - Books: Stored in `/departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}`.
+ * - /users/{userId}: Stores individual user profiles. Access is restricted to the owning user.
+ * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}:
+ *   Hierarchical structure for organizing books.  Read access is public, but writes are only permitted to authorized users with a role.
  *
  * Key Security Decisions:
- * - Users can only read and write their own user document.
- * - Listing the `/users` collection is denied to all users.
- * - Books are accessible to anyone (public read), but only authenticated users can add, modify, or delete them, based on ownership.
- *
- * Denormalization for Authorization:
- * - Book documents should contain an `addedBy` field to store the user ID of the user who added the book for write operation authorization.
+ * - User listing is denied to prevent unauthorized data access.
+ * - The rules do not implement comprehensive data validation, allowing developers to iterate quickly on the data model.
+ * - All write operations are carefully secured with authorization checks to prevent unauthorized data modification or deletion.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile data.
+     * @description Prevents listing all users in the database.
+     * @path /users
+     * @allow None - Listing users is not permitted.
+     * @deny (list) Any user attempting to list all users.
+     * @principle Prevents unauthorized access to user data by disallowing listing.
+     */
+    match /users {
+      allow list: if false;
+    }
+
+    /**
+     * @description Manages user profile data.
      * @path /users/{userId}
-     * @allow (create) - If the user's auth UID matches the userId.
-     * @allow (get, update, delete) - If the user's auth UID matches the userId.
-     * @deny (list) - Listing all users is not permitted.
-     * @deny (create) - If the user's auth UID does not match the userId.
-     * @deny (update, delete) - If the user's auth UID does not match the userId.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (get) Authenticated user accessing their own profile.
+     * @allow (create) Authenticated user creating their own profile.
+     * @allow (update) Authenticated user updating their own profile.
+     * @allow (delete) Authenticated user deleting their own profile.
+     * @deny (get) Authenticated user accessing a different user's profile.
+     * @deny (create) Authenticated user creating a profile with a mismatched user ID.
+     * @deny (update) Authenticated user updating a different user's profile.
+     * @deny (delete) Authenticated user deleting a different user's profile.
+     * @principle Enforces user-ownership: only the authenticated user can read/write their own profile data.
      */
     match /users/{userId} {
-      // Only signed-in users can access their own data.
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // Listing users is not permitted
-
-      // Users can create their own profile, but the ID must match their auth UID.
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
-
-      // Users can update/delete their own profile, only if it exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.uid == userId;
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to the book catalog.
+     * @description Manages book catalog within a hierarchical structure.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get, list) - Public read access.
-     * @allow (create) - Only authenticated users can create a book, and `addedBy` field must match the user's UID.
-     * @allow (update, delete) - Only the user who added the book (`addedBy` field) can modify or delete it, and only if the book exists.
-     * @deny (create) - If the `addedBy` field does not match the user's UID.
-     * @deny (update, delete) - If the book does not exist or the user is not the owner (`addedBy` field).
-     * @principle Allows public reads, restricts writes to the owner.
+     * @allow (get) Any user can read book information.
+     * @allow (list) Any user can list books.
+     * @allow (create) Only authorized users (e.g., librarians, admins) can add books.
+     * @allow (update) Only authorized users can modify book information.
+     * @allow (delete) Only authorized users can remove books.
+     * @deny (create) Unauthorized users attempting to add books.
+     * @deny (update) Unauthorized users attempting to modify books.
+     * @deny (delete) Unauthorized users attempting to remove books.
+     * @principle Public read access with role-based write control.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.addedBy == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingBookOwner(resource.data.addedBy);
+      allow create: if isSignedIn() && isAuthorized();
+      allow update: if isSignedIn() && isAuthorized() && resource != null;
+      allow delete: if isSignedIn() && isAuthorized() && resource != null;
     }
 
-    // --- Helper functions ---
+    // ======================== Helper Functions ========================
 
-    // Checks if the user is signed in.
+    /**
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is authenticated, false otherwise.
+     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Checks if the request is made by the owner of the resource.
+    /**
+     * @description Checks if the user is the owner of the resource.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user ID matches the authenticated user's UID, false otherwise.
+     */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Checks if the request is made by the existing owner of the resource and the resource exists
+    /**
+     * @description Checks if the user is the owner of the resource and the resource exists.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user ID matches the authenticated user's UID and the resource exists, false otherwise.
+     */
     function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
     }
 
-    // Checks if the request is made by the existing owner of the book and the book exists
-    function isExistingBookOwner(ownerId) {
-        return request.auth.uid == ownerId && resource != null;
+    /**
+     * @description Checks if the user has the 'librarian' or 'admin' role.
+     * @return {boolean} True if the user has the required role, false otherwise.
+     */
+    function isAuthorized() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['librarian', 'admin'];
     }
   }
 }
