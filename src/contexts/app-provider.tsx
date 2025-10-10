@@ -85,7 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               const newUserRole = isAdmin ? "admin" : "student";
               
               const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
-                name: isAdmin ? "Deogiri Admin" : (fbUser.displayName || "New User"),
+                name: fbUser.displayName || "New User",
                 email: fbUser.email,
                 role: newUserRole,
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
@@ -170,7 +170,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user') {
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         console.error("Google Sign-In Failed:", error);
         toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
       }
@@ -183,7 +183,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user') {
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         console.error("GitHub Sign-In Failed:", error);
         toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
       }
