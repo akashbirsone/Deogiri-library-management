@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   getAuth,
   onAuthStateChanged,
@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 import { Role, Student, Book, BorrowHistoryItem, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -36,11 +36,11 @@ interface AppContextType {
   signInWithGithub: () => Promise<void>;
   emailLogin: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  borrowBook: (bookId: string) => Promise<void>;
+  borrowBook: (bookPath: string) => Promise<void>;
   returnBook: (bookId: string) => Promise<void>;
-  addBook: (book: Omit<Book, 'id'>) => Promise<void>;
-  updateBook: (book: Book) => Promise<void>;
-  deleteBook: (bookId: string) => Promise<void>;
+  addBook: (path: string, book: Omit<Book, 'id'>) => Promise<void>;
+  updateBook: (path: string, book: Partial<Book>) => Promise<void>;
+  deleteBook: (path: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
 }
@@ -77,10 +77,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               const userData = userDoc.data() as User;
               setUser(userData);
               updateDoc(userDocRef, { lastLogin: serverTimestamp() }).catch(e => console.error("Failed to update last login", e));
-
             } else {
               const isAdmin = fbUser.email === "deogiri_admin@college.com";
-              const newUserRole = isAdmin ? "admin" : "student";
+              const newUserRole: Role = isAdmin ? "admin" : "student";
               
               const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || "New User",
@@ -92,8 +91,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               };
 
               if (newUserRole === 'student') {
-                (newUser as Student).borrowHistory = [];
-                (newUser as Student).fines = 0;
+                (newUser as Partial<Student>).borrowHistory = [];
+                (newUser as Partial<Student>).fines = 0;
               }
 
               setDoc(userDocRef, newUser)
@@ -131,20 +130,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!firestore || !user) {
-        setBooks([]);
-        setUsers([]);
+        if (!user) { // Clear users if no user is logged in
+            setUsers([]);
+        }
         return;
     };
     
-    const booksCollection = collection(firestore, 'books');
-    const unsubBooks = onSnapshot(booksCollection, (snapshot) => {
-        const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
-        setBooks(booksData);
-    }, async (error) => {
-        const permissionError = new FirestorePermissionError({ path: 'books', operation: 'list' });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-
+    // Only admins/librarians can see all users
     let unsubUsers = () => {};
     if (user.role === 'admin' || user.role === 'librarian') {
         const usersCollection = collection(firestore, 'users');
@@ -155,15 +147,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
             errorEmitter.emit('permission-error', permissionError);
         });
+    } else {
+        // Clear user list if a student logs in, they should only see their own data
+        setUsers([]);
     }
 
-
     return () => {
-        unsubBooks();
         unsubUsers();
     };
   }, [firestore, user]);
-  
+
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
@@ -195,7 +188,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
-        // Re-throw the error to be handled by the calling component
         throw error;
     }
   }
@@ -215,142 +207,148 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
   
-  const borrowBook = async (bookId: string) => {
+ const borrowBook = async (bookPath: string) => {
     if (!user || user.role !== 'student' || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Action Not Allowed",
-        description: "Only students can borrow books.",
-      });
+      toast({ variant: "destructive", title: "Action Not Allowed", description: "Only students can borrow books." });
       return;
     }
+
     const studentProfile = user as Student;
+    const bookDocRef = doc(firestore, bookPath);
+    
+    try {
+        const bookDoc = await getDoc(bookDocRef);
+        if (!bookDoc.exists()) {
+            toast({ variant: "destructive", title: "Error", description: "Book not found." });
+            return;
+        }
 
-    const bookToBorrow = books.find(b => b.id === bookId);
-    if (!bookToBorrow) {
-      toast({ variant: "destructive", title: "Error", description: "Book not found." });
-      return;
-    }
+        const bookToBorrow = { id: bookDoc.id, ...bookDoc.data() } as Book;
 
-    if (bookToBorrow.availableCopies < 1) {
-      toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
-      return;
-    }
+        if (!bookToBorrow.isAvailable) {
+            toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
+            return;
+        }
 
-    const today = new Date();
-    const dueDate = add(today, { days: 14 });
+        const today = new Date();
+        const dueDate = add(today, { days: 14 });
 
-    const newBorrowItem: BorrowHistoryItem = {
-      bookId: bookId,
-      borrowDate: formatISO(today),
-      dueDate: formatISO(dueDate),
-    };
+        const newBorrowItem: BorrowHistoryItem = {
+            bookId: bookToBorrow.id,
+            bookPath: bookPath,
+            borrowDate: formatISO(today),
+            dueDate: formatISO(dueDate),
+        };
 
-    const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
+        const updatedHistory = [...(studentProfile.borrowHistory || []), newBorrowItem];
 
-    const userDocRef = doc(firestore, "users", studentProfile.uid);
-    const bookDocRef = doc(firestore, "books", bookId);
-    const bookUpdateData = { availableCopies: bookToBorrow.availableCopies - 1 };
-    const userUpdateData = { borrowHistory: updatedHistory };
+        const batch = writeBatch(firestore);
+        const userDocRef = doc(firestore, "users", studentProfile.uid);
+        
+        batch.update(bookDocRef, { isAvailable: false });
+        batch.update(userDocRef, { borrowHistory: updatedHistory });
 
-    setDoc(userDocRef, userUpdateData, { merge: true })
-      .then(() => {
-        return setDoc(bookDocRef, bookUpdateData, { merge: true });
-      })
-      .then(() => {
+        await batch.commit();
+
         setUser({ ...studentProfile, borrowHistory: updatedHistory });
+        
         toast({
-          title: "Book Borrowed!",
-          description: `${bookToBorrow.title} has been added to your books. Due date: ${format(dueDate, "PPP")}.`,
+            title: "Book Borrowed!",
+            description: `${bookToBorrow.title} has been issued. Due date: ${format(dueDate, "PPP")}.`,
         });
-      })
-      .catch(async (error) => {
-          const isUserDocError = error.message.includes("users");
-          const permissionError = new FirestorePermissionError({
-            path: isUserDocError ? userDocRef.path : bookDocRef.path,
+
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: bookPath,
             operation: 'update',
-            requestResourceData: isUserDocError ? userUpdateData : bookUpdateData,
+            requestResourceData: { isAvailable: false },
           });
           errorEmitter.emit('permission-error', permissionError);
-      });
-  };
+    }
+};
 
-  const returnBook = async (bookId: string) => {
+
+const returnBook = async (bookId: string) => {
     if (!user || user.role !== 'student' || !firestore) return;
+
     const studentProfile = user as Student;
+    const itemToReturn = (studentProfile.borrowHistory || []).find(item => item.bookId === bookId && !item.returnDate);
 
-    const bookToReturn = books.find(b => b.id === bookId);
-    if (!bookToReturn) return;
+    if (!itemToReturn) {
+        toast({ variant: "destructive", title: "Error", description: "Cannot find this book in your borrowed list." });
+        return;
+    }
 
-    let fine = 0;
-    const today = new Date();
+    const bookDocRef = doc(firestore, itemToReturn.bookPath);
     
-    const updatedHistory = (studentProfile.borrowHistory || []).map(item => {
-        if (item.bookId === bookId && !item.returnDate) {
-            const dueDate = new Date(item.dueDate);
-            const daysOverdue = differenceInDays(today, dueDate);
+    try {
+        let fine = 0;
+        const today = new Date();
+        const dueDate = new Date(itemToReturn.dueDate);
+        const daysOverdue = differenceInDays(today, dueDate);
 
-            if (daysOverdue > 0) {
-                fine = daysOverdue * 10;
-            }
-            return { ...item, returnDate: formatISO(today), fine: fine };
+        if (daysOverdue > 0) {
+            fine = daysOverdue * 10; // 10 INR per day
         }
-        return item;
-    });
 
-    const totalFines = (studentProfile.fines || 0) + fine;
-    
-    const userDocRef = doc(firestore, "users", studentProfile.uid);
-    const updateData = { borrowHistory: updatedHistory, fines: totalFines };
-    const bookDocRef = doc(firestore, "books", bookId);
-    const bookUpdateData = { availableCopies: bookToReturn.availableCopies + 1 };
+        const updatedHistory = (studentProfile.borrowHistory || []).map(item =>
+            (item.bookId === bookId && !item.returnDate)
+                ? { ...item, returnDate: formatISO(today), fine: fine }
+                : item
+        );
 
-    setDoc(userDocRef, updateData, { merge: true })
-      .then(() => {
-        return setDoc(bookDocRef, bookUpdateData, { merge: true });
-      })
-      .then(() => {
+        const totalFines = (studentProfile.fines || 0) + fine;
+
+        const batch = writeBatch(firestore);
+        const userDocRef = doc(firestore, "users", studentProfile.uid);
+
+        batch.update(bookDocRef, { isAvailable: true });
+        batch.update(userDocRef, { borrowHistory: updatedHistory, fines: totalFines });
+
+        await batch.commit();
+
         setUser({ ...studentProfile, borrowHistory: updatedHistory, fines: totalFines });
+        const bookDoc = await getDoc(bookDocRef);
+        
         toast({
-            title: `Book "${bookToReturn.title}" Returned`,
-            description: fine > 0 ? `A fine of ₹${fine} has been added to your account.` : 'Thank you for returning the book on time!',
+            title: `Book "${bookDoc.data()?.title}" Returned`,
+            description: fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!',
         });
-      })
-      .catch(async (error) => {
-        const isUserDocError = error.message.includes("users");
+
+    } catch (error: any) {
         const permissionError = new FirestorePermissionError({
-            path: isUserDocError ? userDocRef.path : bookDocRef.path,
+            path: itemToReturn.bookPath,
             operation: 'update',
-            requestResourceData: isUserDocError ? updateData : bookUpdateData,
+            requestResourceData: { isAvailable: true },
         });
         errorEmitter.emit('permission-error', permissionError);
-    });
-  };
+    }
+};
+
   
-    const addBook = async (book: Omit<Book, 'id'>) => {
+    const addBook = async (path: string, book: Omit<Book, 'id'>) => {
         if (!firestore) return;
-        const booksCollection = collection(firestore, 'books');
+        const booksCollection = collection(firestore, path);
         addDoc(booksCollection, book).catch(async (error) => {
-            const permissionError = new FirestorePermissionError({ path: 'books', operation: 'create', requestResourceData: book });
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'create', requestResourceData: book });
             errorEmitter.emit('permission-error', permissionError);
         });
     };
 
-    const updateBook = async (book: Book) => {
+    const updateBook = async (path: string, book: Partial<Book>) => {
         if (!firestore) return;
-        const { id, ...bookData } = book;
-        const bookDoc = doc(firestore, 'books', id);
-        setDoc(bookDoc, bookData, { merge: true }).catch(async (error) => {
-            const permissionError = new FirestorePermissionError({ path: bookDoc.path, operation: 'update', requestResourceData: bookData });
+        const bookDoc = doc(firestore, path);
+        updateDoc(bookDoc, book).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'update', requestResourceData: book });
             errorEmitter.emit('permission-error', permissionError);
         });
     };
 
-    const deleteBook = async (bookId: string) => {
+    const deleteBook = async (path: string) => {
         if (!firestore) return;
-        const bookDoc = doc(firestore, 'books', bookId);
+        const bookDoc = doc(firestore, path);
         deleteDoc(bookDoc).catch(async (error) => {
-            const permissionError = new FirestorePermissionError({ path: bookDoc.path, operation: 'delete' });
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'delete' });
             errorEmitter.emit('permission-error', permissionError);
         });
     };
@@ -373,6 +371,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
+    // New effect to listen to books based on path
+    const [bookPath, setBookPath] = useState<string | null>(null);
+
+    const listenToBooks = useCallback((path: string | null) => {
+        setBookPath(path);
+    }, []);
+
+    useEffect(() => {
+        if (!firestore || !bookPath) {
+            setBooks([]);
+            return;
+        }
+
+        const subjects = bookPath.split('/');
+        const subjectName = subjects[subjects.length-1];
+
+        const q = query(collection(firestore, bookPath));
+
+        const unsub = onSnapshot(q, (snapshot) => {
+            const booksData = snapshot.docs.map(doc => ({ id: doc.id, subject: subjectName, ...doc.data() } as Book));
+            setBooks(booksData);
+            setLoading(false);
+        }, (error) => {
+             const permissionError = new FirestorePermissionError({ path: bookPath, operation: 'list' });
+             errorEmitter.emit('permission-error', permissionError);
+             setLoading(false);
+        });
+
+        return () => unsub();
+    }, [firestore, bookPath]);
+
 
   return (
     <AppContext.Provider value={{
@@ -393,7 +422,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateBook,
         deleteBook,
         updateUser,
-        deleteUser
+        deleteUser,
     }}>
       {children}
     </AppContext.Provider>

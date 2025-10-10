@@ -8,8 +8,8 @@ export interface User {
   role: Role;
   avatar: string;
   studentId?: string;
-  department?: string;
-  course?: string;
+  department?: string; // This will now be the department ID
+  course?: string; // This will be the course ID
   contactNumber?: string;
   yearOfStudy?: string;
   borrowHistory?: BorrowHistoryItem[];
@@ -22,20 +22,19 @@ export interface Book {
   id: string;
   title: string;
   author: string;
-  isbn: string;
-  category: string;
-  department: string;
-  publicationYear: number;
-  totalCopies: number;
-  availableCopies: number;
+  subject: string; // "Category" is now "Subject"
+  isAvailable: boolean; // Replaces copy counting
   coverImage: string;
   coverImageHint: string;
   addedBy?: string;
   addedDate?: string;
+  // Note: department, course, semester are part of the path now
 }
 
 export interface BorrowHistoryItem {
   bookId: string;
+  // We need to store the full path to the book for context
+  bookPath: string; 
   borrowDate: string;
   returnDate?: string;
   dueDate: string;
@@ -52,5 +51,3 @@ export interface Student extends User {
   borrowHistory: BorrowHistoryItem[];
   fines: number;
 }
-
-    
