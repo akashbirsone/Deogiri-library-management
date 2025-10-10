@@ -92,7 +92,7 @@ export function BooksView() {
     });
     
     const categoriesForSelectedDept = selectedDepartment !== 'all' 
-        ? Object.values(departmentsData[selectedDepartment as keyof typeof departmentsData] || {}).flat()
+        ? departmentsData[selectedDepartment as keyof typeof departmentsData] || []
         : [];
 
   return (
@@ -252,7 +252,7 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
     const [selectedDepartment, setSelectedDepartment] = React.useState(book?.department || '');
 
      const categoriesForSelectedDept = selectedDepartment
-        ? Object.values(departmentsData[selectedDepartment as keyof typeof departmentsData] || {}).flat()
+        ? departmentsData[selectedDepartment as keyof typeof departmentsData] || []
         : [];
 
 
@@ -352,5 +352,3 @@ const BookForm = ({ onSubmit, onClose, book }: { onSubmit: (data: Partial<BookTy
         </DialogContent>
     );
 };
-
-    
