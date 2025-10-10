@@ -27,6 +27,7 @@ import {
   Edit,
   Loader2,
   BookOpenCheck,
+  MoreVertical,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,6 +42,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { departments } from "@/lib/departments";
 import { Switch } from "@/components/ui/switch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
 export function BooksView() {
   const {
@@ -142,6 +145,8 @@ export function BooksView() {
     setIsFormOpen(true);
   };
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'librarian';
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
@@ -216,129 +221,85 @@ export function BooksView() {
       )}
 
       {!appLoading && selectedSemester && (
-        <div className="space-y-8">
+         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {selectedSemester.subjects.map((subject) => {
             const subjectBooks = booksForSelectedFilters.filter(
               (book) => book.subject === subject.name
             );
             return (
-              <div key={subject.name}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-headline text-2xl font-semibold">
-                    {subject.name}
-                  </h2>
-                  {(user?.role === "admin" || user?.role === "librarian") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openAddBookForm(subject.name)}
-                    >
+              <Card key={subject.name} className="flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="font-headline text-xl">{subject.name}</CardTitle>
+                  {isAdmin && (
+                    <Button variant="outline" size="sm" onClick={() => openAddBookForm(subject.name)}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Book to {subject.name}
+                      Add Book
                     </Button>
                   )}
-                </div>
-                {subjectBooks.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    {subjectBooks.map((book) => (
-                      <Card
-                        key={book.id}
-                        className="flex flex-col overflow-hidden"
-                      >
-                        <CardHeader className="p-0">
-                          <div className="relative aspect-[3/4]">
-                            <Image
-                              src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
-                              alt={book.title}
-                              fill
-                              className="object-cover"
-                              data-ai-hint={book.coverImageHint}
-                            />
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4 flex-grow flex flex-col">
-                          <CardTitle className="text-base font-semibold leading-snug tracking-tight mb-1">
-                            {book.title}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            by {book.author}
-                          </p>
-                          <div className="mt-auto pt-4">
-                            <Badge
-                              variant={
-                                book.isAvailable ? "secondary" : "destructive"
-                              }
-                            >
-                              {book.isAvailable ? "Available" : "Unavailable"}
-                            </Badge>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="p-4 pt-0">
-                          {user?.role === "student" && (
-                            <Button
-                              className="w-full"
-                              disabled={!book.isAvailable}
-                              onClick={() => {
-                                const bookPath = getPath(book.subject);
-                                if(!bookPath) return;
-                                borrowBook(`${bookPath}/${book.id}`)
-                              }}
-                            >
-                              Borrow
-                            </Button>
-                          )}
-                          {(user?.role === "admin" ||
-                            user?.role === "librarian") && (
-                            <div className="w-full flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditBook(book)}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-destructive"
-                                onClick={() => handleDeleteBook(book)}
-                              >
-                                <Trash className="h-3 w-3" />
-                              </Button>
-                              <div className="flex items-center space-x-2 ml-auto">
-                                <Switch
-                                    id={`available-${book.id}`}
-                                    checked={book.isAvailable}
-                                    onCheckedChange={(isAvailable) => {
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  {subjectBooks.length > 0 ? (
+                    <div className="space-y-4">
+                      {subjectBooks.map((book) => (
+                        <div key={book.id} className="flex items-center gap-4">
+                            <div className="relative w-16 h-20 rounded-md overflow-hidden flex-shrink-0">
+                                <Image 
+                                    src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
+                                    alt={book.title}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={book.coverImageHint}
+                                />
+                            </div>
+                            <div className="flex-grow">
+                                <p className="font-semibold leading-tight">{book.title}</p>
+                                <p className="text-sm text-muted-foreground">by {book.author}</p>
+                                <Badge variant={book.isAvailable ? "secondary" : "destructive"} className="mt-1">
+                                    {book.isAvailable ? "Available" : "Unavailable"}
+                                </Badge>
+                            </div>
+                            <div className="ml-auto">
+                                {isAdmin ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEditBook(book)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
+                                                <Trash className="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : (
+                                    <Button
+                                      size="sm"
+                                      disabled={!book.isAvailable}
+                                      onClick={() => {
                                         const bookPath = getPath(book.subject);
                                         if(!bookPath) return;
-                                        updateBook(`${bookPath}/${book.id}`, { isAvailable })
-                                    }}
-                                />
-                                <Label htmlFor={`available-${book.id}`} className="text-xs">Available</Label>
-                                </div>
+                                        borrowBook(`${bookPath}/${book.id}`)
+                                      }}
+                                    >
+                                      Borrow
+                                    </Button>
+                                )}
                             </div>
-                          )}
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <BookOpenCheck className="mx-auto h-12 w-12" />
-                    <p className="mt-4">No books found for this subject.</p>
-                     {(user?.role === "admin" || user?.role === "librarian") && (
-                        <Button
-                            variant="link"
-                            className="mt-2"
-                            onClick={() => openAddBookForm(subject.name)}
-                        >
-                            Add the first book
-                        </Button>
-                     )}
-                  </div>
-                )}
-              </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <BookOpenCheck className="mx-auto h-12 w-12" />
+                      <p className="mt-4">No books found for this subject.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
         </div>
@@ -370,6 +331,7 @@ const BookForm = ({
     book || {
       title: "",
       author: "",
+      coverImage: "",
       isAvailable: true,
     }
   );
@@ -379,12 +341,13 @@ const BookForm = ({
       setFormData(book);
     } else {
       setFormData({
-        title: subject, // Pre-fill title with subject
+        title: "",
         author: "",
+        coverImage: "",
         isAvailable: true,
       });
     }
-  }, [book, subject]);
+  }, [book]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -431,6 +394,19 @@ const BookForm = ({
           />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="coverImage" className="text-right">
+            Cover URL
+          </Label>
+          <Input
+            id="coverImage"
+            name="coverImage"
+            value={formData.coverImage}
+            onChange={handleChange}
+            className="col-span-3"
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="isAvailable" className="text-right">
             Available
           </Label>
@@ -454,3 +430,5 @@ const BookForm = ({
     </DialogContent>
   );
 };
+
+    
