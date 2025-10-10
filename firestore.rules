@@ -1,24 +1,16 @@
 /**
- * @fileoverview Firestore Security Rules for the Library Application.
- *
- * Core Philosophy:
- * This ruleset prioritizes secure data access based on user roles and strict ownership.
- * Users can only manage their own profile data. Books are organized hierarchically and access is completely public.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for user profiles
+ * and allows public read access to the book catalog while restricting write access to authenticated users.
  *
  * Data Structure:
- * - /users/{userId}: Stores individual user profiles.
- * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}:
- *   Stores book information, organized by department, course, semester, and subject.
+ * - /users/{userId}: Stores profile information for each user, accessible only by the user themselves.
+ * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}: Stores the library's book catalog.
  *
  * Key Security Decisions:
- * - User profiles are only accessible and modifiable by the owning user.
- * - Book listing is public, but book creation, updating, and deletion are disallowed.
- *
- * Denormalization for Authorization:
- *  N/A (No denormalization needed)
- *
- * Structural Segregation:
- *  User profiles and book catalog are kept in separate parts of the database.
+ * - Users can only read and write their own profile data.
+ * - The book catalog is publicly readable.
+ * - The app does not have global roles (e.g., "admin") in this iteration.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -27,11 +19,13 @@ service cloud.firestore {
     /**
      * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (get, list) if the user is the owner of the profile.
-     * @allow (create, update, delete) if the user is the owner of the profile.
-     * @deny (get, list) if the user is not the owner of the profile.
-     * @deny (create, update, delete) if the user is not the owner of the profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with UID 'user123' can create their profile.
+     * @allow (get) User with UID 'user123' can read their profile.
+     * @allow (update) User with UID 'user123' can update their profile.
+     * @allow (delete) User with UID 'user123' can delete their profile.
+     * @deny (create) User with UID 'user123' cannot create a profile with a different ID.
+     * @deny (get) User with UID 'user456' cannot read user 'user123's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
@@ -42,38 +36,47 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to book information within the hierarchical structure.
+     * @description Controls access to the library's book catalog.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get, list) to everyone.
-     * @deny (create, update, delete) to everyone.
-     * @principle Allows public read access but restricts write access.
+     * @allow (get) Any user can read book data.
+     * @allow (list) Any user can list book data.
+     * @allow (create) Any authenticated user can create a book.
+     * @allow (update) Any authenticated user can update a book.
+     * @allow (delete) Any authenticated user can delete a book.
+     * @deny (create) Unauthenticated user cannot create a book.
+     * @principle Allows public read access, restricts write access to authenticated users.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
+    // --- Helper functions ---
 
     /**
-     * @description Controls access to books in a collection group.
-     * @path /books (collection group)
-     * @allow (get, list) to everyone.
-     * @deny (create, update, delete) to everyone.
-     * @principle Allows public read access but restricts write access.
+     * @description Checks if the user is signed in.
+     * @return true if the user is signed in, false otherwise.
      */
-    match /{path=**}/books/{document} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * @description Checks if the user ID matches the authenticated user's UID.
+     * @param {string} userId The user ID to compare against.
+     * @return true if the user ID matches the authenticated user's UID, false otherwise.
+     */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
+    /**
+     * @description Checks if the user is the owner of an existing document.
+     * @param {string} userId The user ID to compare against.
+     * @return true if the user ID matches the authenticated user's UID and the document exists, false otherwise.
+     */
     function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
     }
