@@ -32,7 +32,6 @@ interface AppContextType {
   firestore: Firestore | null;
   books: Book[];
   users: User[];
-  setBooksPath: (path: string | null) => void;
   
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
@@ -58,7 +57,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [booksPath, setBooksPath] = useState<string | null>(null);
   const router = useRouter();
   
   const { toast } = useToast();
@@ -378,28 +376,28 @@ const returnBook = async (bookId: string) => {
     };
 
     useEffect(() => {
-        if (!firestore || !booksPath) {
+        if (!firestore) {
             setBooks([]);
             return;
         }
         
         setLoading(true);
 
-        const booksQuery = query(collectionGroup(firestore, 'books'), where('__name__', '>=', booksPath), where('__name__', '<', booksPath + '\uf8ff'));
+        const booksQuery = query(collectionGroup(firestore, 'books'));
 
         const unsub = onSnapshot(booksQuery, (snapshot) => {
             const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
             setBooks(booksData);
             setLoading(false);
         }, (error) => {
-             const permissionError = new FirestorePermissionError({ path: booksPath, operation: 'list' });
+             const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
              errorEmitter.emit('permission-error', permissionError);
              setLoading(false);
              setBooks([]);
         });
 
         return () => unsub();
-    }, [firestore, booksPath]);
+    }, [firestore]);
 
     const seedDatabase = async () => {
       if (!firestore || !user || user.role !== 'admin') {
@@ -411,15 +409,20 @@ const returnBook = async (bookId: string) => {
       let booksAddedCount = 0;
       const batch = writeBatch(firestore);
   
+      // Get all existing books to avoid duplicates by subject
+      const allBooksSnapshot = await getDocs(query(collectionGroup(firestore, 'books')));
+      const existingSubjects = new Set(allBooksSnapshot.docs.map(doc => doc.data().subject));
+
       for (const dept of departments) {
           for (const course of dept.courses) {
               for (const semester of course.semesters) {
                   for (const subject of semester.subjects) {
+                      
                       const bookCollectionPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
-                      const booksQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
                       
                       try {
-                          const existingBookSnapshot = await getDocs(booksQuery);
+                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
+                          const existingBookSnapshot = await getDocs(existingBookQuery);
   
                           if (existingBookSnapshot.empty) {
                               // Book does not exist, create it
@@ -440,9 +443,9 @@ const returnBook = async (bookId: string) => {
                               batch.set(newBookRef, newBookData);
                               booksAddedCount++;
                           } else {
-                              // Book exists, update its cover image
+                              // Book exists, update its cover image if different
                               const bookDoc = existingBookSnapshot.docs[0];
-                              if (bookDoc.data().coverImage !== subject.coverImage) {
+                              if (bookDoc.data().coverImage !== subject.coverImage && subject.coverImage) {
                                   batch.update(bookDoc.ref, { coverImage: subject.coverImage });
                                   booksUpdatedCount++;
                               }
@@ -496,7 +499,6 @@ const returnBook = async (bookId: string) => {
         firestore,
         books,
         users,
-        setBooksPath,
         signInWithGoogle,
         signInWithGithub,
         emailLogin,
@@ -522,7 +524,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
-
-    

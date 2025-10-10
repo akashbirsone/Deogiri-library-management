@@ -51,7 +51,6 @@ export function BooksView() {
     updateBook,
     deleteBook,
     loading: appLoading,
-    setBooksPath,
   } = useApp();
 
   const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(null);
@@ -72,14 +71,14 @@ export function BooksView() {
     return `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}/subjects/${subjectName}/books`;
   }
   
-  React.useEffect(() => {
-    if (selectedDeptId && selectedCourseId && selectedSemesterId) {
-        const fullPath = `departments/${selectedDeptId}/courses/${selectedCourseId}/semesters/${selectedSemesterId}`;
-        setBooksPath(fullPath);
-    } else {
-        setBooksPath(null); 
-    }
-  }, [selectedDeptId, selectedCourseId, selectedSemesterId, setBooksPath]);
+  const booksForSelectedFilters = React.useMemo(() => {
+    if (!selectedSemesterId) return [];
+    return allBooks.filter(book => 
+      book.department === selectedDeptId &&
+      book.course === selectedCourseId &&
+      book.semester === selectedSemesterId
+    );
+  }, [allBooks, selectedDeptId, selectedCourseId, selectedSemesterId]);
 
 
   const handleFormSubmit = async (bookData: Partial<BookType>) => {
@@ -219,7 +218,7 @@ export function BooksView() {
       {!appLoading && selectedSemester && (
         <div className="space-y-8">
           {selectedSemester.subjects.map((subject) => {
-            const subjectBooks = allBooks.filter(
+            const subjectBooks = booksForSelectedFilters.filter(
               (book) => book.subject === subject.name
             );
             return (
