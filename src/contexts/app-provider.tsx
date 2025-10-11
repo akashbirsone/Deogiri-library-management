@@ -372,7 +372,7 @@ const returnBook = async (bookId: string) => {
     };
 
     useEffect(() => {
-        if (!firestore) {
+        if (!firestore || !user) {
             setBooks([]);
             return;
         }
@@ -393,7 +393,7 @@ const returnBook = async (bookId: string) => {
         });
 
         return () => unsub();
-    }, [firestore]);
+    }, [firestore, user]);
 
     const seedDatabase = async () => {
       if (!firestore || !user || user.role !== 'admin') {
