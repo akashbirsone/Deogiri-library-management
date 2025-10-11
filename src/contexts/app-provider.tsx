@@ -44,7 +44,6 @@ interface AppContextType {
   deleteBook: (path: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
-  seedDatabase: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -388,90 +387,6 @@ const returnBook = async (bookId: string) => {
             errorEmitter.emit('permission-error', permissionError);
         });
     };
-    
-    const seedDatabase = async () => {
-      if (!firestore || !user || user.role !== 'admin') {
-          toast({ variant: 'destructive', title: 'Permission Denied' });
-          return;
-      }
-  
-      let booksUpdatedCount = 0;
-      let booksAddedCount = 0;
-      const batch = writeBatch(firestore);
-  
-      for (const dept of departments) {
-          for (const course of dept.courses) {
-              for (const semester of course.semesters) {
-                  for (const subject of semester.subjects) {
-                      const bookCollectionPath = `departments/${dept.id}/courses/${course.id}/semesters/${semester.id}/subjects/${subject.name}/books`;
-                      
-                      try {
-                          const existingBookQuery = query(collection(firestore, bookCollectionPath), where("subject", "==", subject.name), limit(1));
-                          const existingBookSnapshot = await getDocs(existingBookQuery);
-  
-                          if (existingBookSnapshot.empty) {
-                              const newBookRef = doc(collection(firestore, bookCollectionPath));
-                              const newBookData: Omit<Book, 'id' | 'path'> = {
-                                  title: subject.name,
-                                  author: "Faculty of " + dept.name,
-                                  subject: subject.name,
-                                  isAvailable: true,
-                                  coverImage: subject.coverImage || "",
-                                  coverImageHint: subject.name.split(" ").slice(0, 2).join(" "),
-                                  addedBy: user.email || 'admin',
-                                  addedDate: new Date().toISOString(),
-                                  department: dept.id,
-                                  course: course.id,
-                                  semester: semester.id,
-                              };
-                              batch.set(newBookRef, newBookData);
-                              booksAddedCount++;
-                          } else {
-                              const bookDoc = existingBookSnapshot.docs[0];
-                              if (bookDoc.data().coverImage !== subject.coverImage) {
-                                  batch.update(bookDoc.ref, { coverImage: subject.coverImage });
-                                  booksUpdatedCount++;
-                              }
-                          }
-                      } catch (e: any) {
-                          const permissionError = new FirestorePermissionError({
-                              path: bookCollectionPath,
-                              operation: 'list', 
-                          });
-                          errorEmitter.emit('permission-error', permissionError);
-                          toast({ variant: "destructive", title: "Seeding Error", description: "Could not access book data to perform update." });
-                          return; 
-                      }
-                  }
-              }
-          }
-      }
-  
-      if (booksAddedCount === 0 && booksUpdatedCount === 0) {
-          toast({
-              title: "Database is Already Up-to-date",
-              description: "No new book placeholders or cover image updates were needed.",
-          });
-          return;
-      }
-  
-      try {
-          await batch.commit();
-          toast({
-              title: "Database Seeding Complete",
-              description: `${booksAddedCount} new book(s) added and ${booksUpdatedCount} cover image(s) updated.`,
-          });
-      } catch (e: any) {
-          const permissionError = new FirestorePermissionError({
-              path: '/departments',
-              operation: 'create',
-              requestResourceData: { info: 'Batch write for seeding/updating database.' }
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          toast({ variant: "destructive", title: "Seeding Failed", description: "An error occurred while committing the changes." });
-      }
-  };
-
 
   return (
     <AppContext.Provider value={{
@@ -493,7 +408,6 @@ const returnBook = async (bookId: string) => {
         deleteBook,
         updateUser,
         deleteUser,
-        seedDatabase
     }}>
       {children}
     </AppContext.Provider>
@@ -507,7 +421,5 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
 
     

@@ -52,14 +52,13 @@ const DashboardSkeleton = () => (
 )
 
 const AdminDashboard = () => {
-    const { books: allBooks, users, seedDatabase, loading: appLoading } = useApp();
+    const { books: allBooks, users, loading: appLoading } = useApp();
     const { toast } = useToast();
     
     const borrowedBooksCount = allBooks.filter(b => !b.isAvailable).length;
     const totalStudents = users.filter(u => u.role === 'student').length;
     const totalFines = (users.filter(u => u.role === 'student') as Student[]).reduce((acc, student) => acc + (student.fines || 0), 0);
     const [isClient, setIsClient] = React.useState(false);
-    const [isSeeding, setIsSeeding] = React.useState(false);
 
     React.useEffect(() => {
         setIsClient(true);
@@ -89,20 +88,6 @@ const AdminDashboard = () => {
         }, [] as {name: string, borrowed: number}[])
         .sort((a,b) => b.borrowed - a.borrowed).slice(0, 5);
         
-    const handleSeed = async () => {
-        setIsSeeding(true);
-        try {
-            await seedDatabase();
-        } catch(e) {
-            toast({
-                title: "Seeding Failed",
-                description: "There was an error seeding the database.",
-                variant: "destructive"
-            })
-        } finally {
-            setIsSeeding(false);
-        }
-    }
 
   if (appLoading) {
       return <DashboardSkeleton />
@@ -112,10 +97,6 @@ const AdminDashboard = () => {
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <Button onClick={handleSeed} variant="outline" disabled={isSeeding}>
-            {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-            {isSeeding ? "Seeding..." : "Seed Books"}
-        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -458,7 +439,5 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
-    
 
     
