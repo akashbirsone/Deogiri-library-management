@@ -54,7 +54,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<FirebaseAuthUser | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
@@ -69,7 +70,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPersistence(au, browserLocalPersistence)
       .then(() => {
         const unsubscribe = onAuthStateChanged(au, async (fbUser) => {
-          setLoading(true);
+          setAuthLoading(true);
           if (fbUser) {
             setAuthUser(fbUser);
             const userDocRef = doc(fs, "users", fbUser.uid);
@@ -119,47 +120,86 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               router.push('/');
             }
           }
-          setLoading(false);
+          setAuthLoading(false);
         });
         return () => unsubscribe();
       })
       .catch((error) => {
         console.error("Error setting auth persistence:", error);
         toast({ variant: "destructive", title: "Authentication Error", description: "Could not set session persistence." });
-        setLoading(false);
+        setAuthLoading(false);
       });
   }, [toast, router]);
 
-  useEffect(() => {
-    if (!firestore) return;
-    
-    let unsubUsers = () => {};
+    useEffect(() => {
+        if (!firestore || !user) {
+            setBooks([]);
+            setUsers([]);
+            setDataLoading(false);
+            return;
+        }
 
-    if (user && (user.role === 'admin' || user.role === 'librarian')) {
-        const usersCollection = collection(firestore, 'users');
-        unsubUsers = onSnapshot(usersCollection, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-            setUsers(usersData);
-        }, async (error) => {
-            const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    } else if (user) {
-        // For students, just load their own user object into the users array
-        const userDocRef = doc(firestore, 'users', user.uid);
-        unsubUsers = onSnapshot(userDocRef, (doc) => {
-            if (doc.exists()) {
-                setUsers([{ ...doc.data(), uid: doc.id } as User]);
+        setDataLoading(true);
+        let active = true;
+
+        const loadData = async () => {
+            const usersPromise = new Promise<User[]>((resolve, reject) => {
+                let unsubUsers = () => {};
+                if (user && (user.role === 'admin' || user.role === 'librarian')) {
+                    const usersCollection = collection(firestore, 'users');
+                    unsubUsers = onSnapshot(usersCollection, (snapshot) => {
+                        const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+                        if(active) setUsers(usersData);
+                    }, async (error) => {
+                        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+                        errorEmitter.emit('permission-error', permissionError);
+                        reject(error);
+                    });
+                } else if (user) {
+                    const userDocRef = doc(firestore, 'users', user.uid);
+                    unsubUsers = onSnapshot(userDocRef, (doc) => {
+                        if (doc.exists()) {
+                            if(active) setUsers([{ ...doc.data(), uid: doc.id } as User]);
+                        }
+                    });
+                } else {
+                    if(active) setUsers([]);
+                    resolve([]);
+                }
+                // This doesn't resolve with data, relies on setState, which is fine for this hook's structure
+            });
+
+            const booksPromise = new Promise<Book[]>((resolve, reject) => {
+                const booksQuery = query(collectionGroup(firestore, 'books'));
+                const unsubBooks = onSnapshot(booksQuery, (snapshot) => {
+                    const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
+                    if(active) setBooks(booksData);
+                }, (error) => {
+                    const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
+                    errorEmitter.emit('permission-error', permissionError);
+                    if(active) setBooks([]);
+                    reject(error);
+                });
+            });
+
+            try {
+                await Promise.all([usersPromise, booksPromise]);
+            } catch (error) {
+                console.error("Error loading data:", error);
+            } finally {
+                if (active) {
+                    setDataLoading(false);
+                }
             }
-        });
-    } else {
-        setUsers([]); 
-    }
+        };
 
-    return () => {
-        unsubUsers();
-    };
-}, [firestore, user]);
+        loadData();
+
+        return () => {
+            active = false;
+        };
+    }, [firestore, user]);
+
 
   const signInWithGoogle = async () => {
     if (!auth) return;
@@ -370,31 +410,7 @@ const returnBook = async (bookId: string) => {
             errorEmitter.emit('permission-error', permissionError);
         });
     };
-
-    useEffect(() => {
-        if (!firestore || !user) {
-            setBooks([]);
-            return;
-        }
-        
-        setLoading(true);
-
-        const booksQuery = query(collectionGroup(firestore, 'books'));
-
-        const unsub = onSnapshot(booksQuery, (snapshot) => {
-            const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
-            setBooks(booksData);
-            setLoading(false);
-        }, (error) => {
-             const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
-             errorEmitter.emit('permission-error', permissionError);
-             setLoading(false);
-             setBooks([]);
-        });
-
-        return () => unsub();
-    }, [firestore, user]);
-
+    
     const seedDatabase = async () => {
       if (!firestore || !user || user.role !== 'admin') {
           toast({ variant: 'destructive', title: 'Permission Denied' });
@@ -484,7 +500,7 @@ const returnBook = async (bookId: string) => {
         user,
         setUser,
         authUser,
-        loading,
+        loading: authLoading || dataLoading,
         firestore,
         books,
         users,
@@ -513,3 +529,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
