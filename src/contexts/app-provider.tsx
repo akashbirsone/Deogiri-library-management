@@ -271,8 +271,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           });
           errorEmitter.emit('permission-error', permissionError);
     });
-
-    setUser({ ...studentProfile, borrowHistory: updatedHistory });
     
     toast({
         title: "Book Borrowed!",
@@ -319,8 +317,7 @@ const returnBook = async (bookId: string) => {
         batch.update(userDocRef, { borrowHistory: updatedHistory, fines: totalFines });
 
         await batch.commit();
-
-        setUser({ ...studentProfile, borrowHistory: updatedHistory, fines: totalFines });
+        
         const bookDoc = await getDoc(bookDocRef);
         
         toast({
@@ -385,7 +382,7 @@ const returnBook = async (bookId: string) => {
     };
 
     const seedDatabase = useCallback(async (deptId: string, courseId: string, semId: string) => {
-        if (!firestore || user?.role !== 'admin') return;
+        if (!firestore || !user || (user.role !== 'admin' && user.role !== 'librarian')) return;
 
         const department = departments.find(d => d.id === deptId);
         const course = department?.courses.find(c => c.id === courseId);
