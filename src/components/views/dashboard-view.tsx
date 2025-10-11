@@ -20,21 +20,7 @@ export function DashboardView() {
   const { user, loading } = useApp();
 
   if (loading || !user) {
-    return (
-      <div className="flex flex-col gap-6">
-        <Skeleton className="h-9 w-1/2" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   switch (user.role) {
@@ -45,9 +31,25 @@ export function DashboardView() {
     case "student":
       return <StudentDashboard />;
     default:
-      return null;
+      return <DashboardSkeleton />;
   }
 }
+
+const DashboardSkeleton = () => (
+    <div className="flex flex-col gap-6">
+        <Skeleton className="h-9 w-1/2" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Skeleton className="h-80" />
+            <Skeleton className="h-80" />
+        </div>
+    </div>
+)
 
 const AdminDashboard = () => {
     const { books: allBooks, users, seedDatabase, loading: appLoading } = useApp();
@@ -91,10 +93,6 @@ const AdminDashboard = () => {
         setIsSeeding(true);
         try {
             await seedDatabase();
-            toast({
-                title: "Database Seeded",
-                description: "The book catalog has been populated with initial data.",
-            })
         } catch(e) {
             toast({
                 title: "Seeding Failed",
@@ -107,20 +105,7 @@ const AdminDashboard = () => {
     }
 
   if (appLoading) {
-      return (
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-9 w-1/2" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-            </div>
-          </div>
-      )
+      return <DashboardSkeleton />
   }
 
   return (
@@ -282,17 +267,7 @@ const LibrarianDashboard = () => {
         .flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h})));
 
     if (appLoading) {
-      return (
-          <div className="flex flex-col gap-6">
-            <Skeleton className="h-9 w-1/2" />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-            </div>
-          </div>
-      )
+        return <DashboardSkeleton />
     }
 
     return (
@@ -392,17 +367,7 @@ const StudentDashboard = () => {
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   if (appLoading) {
-    return (
-        <div className="flex flex-col gap-6">
-          <Skeleton className="h-9 w-1/2" />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-              <Skeleton className="h-28" />
-          </div>
-          <Skeleton className="h-80" />
-        </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
@@ -493,5 +458,7 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
 
     

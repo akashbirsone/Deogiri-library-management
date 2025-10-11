@@ -133,70 +133,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!firestore || !user) {
-            setBooks([]);
-            setUsers([]);
             setDataLoading(false);
             return;
         }
 
         setDataLoading(true);
-        let active = true;
+        let unsubUsers: () => void = () => {};
+        let unsubBooks: () => void = () => {};
 
-        const loadData = async () => {
-            const usersPromise = new Promise<User[]>((resolve, reject) => {
-                let unsubUsers = () => {};
-                if (user && (user.role === 'admin' || user.role === 'librarian')) {
-                    const usersCollection = collection(firestore, 'users');
-                    unsubUsers = onSnapshot(usersCollection, (snapshot) => {
-                        const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-                        if(active) setUsers(usersData);
-                    }, async (error) => {
-                        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
-                        errorEmitter.emit('permission-error', permissionError);
-                        reject(error);
-                    });
-                } else if (user) {
-                    const userDocRef = doc(firestore, 'users', user.uid);
-                    unsubUsers = onSnapshot(userDocRef, (doc) => {
-                        if (doc.exists()) {
-                            if(active) setUsers([{ ...doc.data(), uid: doc.id } as User]);
-                        }
-                    });
-                } else {
-                    if(active) setUsers([]);
-                    resolve([]);
-                }
-                // This doesn't resolve with data, relies on setState, which is fine for this hook's structure
+        if (user.role === 'admin' || user.role === 'librarian') {
+            const usersCollection = collection(firestore, 'users');
+            unsubUsers = onSnapshot(usersCollection, (snapshot) => {
+                const usersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+                setUsers(usersData);
+            }, (error) => {
+                const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+                errorEmitter.emit('permission-error', permissionError);
             });
-
-            const booksPromise = new Promise<Book[]>((resolve, reject) => {
-                const booksQuery = query(collectionGroup(firestore, 'books'));
-                const unsubBooks = onSnapshot(booksQuery, (snapshot) => {
-                    const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
-                    if(active) setBooks(booksData);
-                }, (error) => {
-                    const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
-                    errorEmitter.emit('permission-error', permissionError);
-                    if(active) setBooks([]);
-                    reject(error);
-                });
-            });
-
-            try {
-                await Promise.all([usersPromise, booksPromise]);
-            } catch (error) {
-                console.error("Error loading data:", error);
-            } finally {
-                if (active) {
-                    setDataLoading(false);
+        } else {
+             const userDocRef = doc(firestore, 'users', user.uid);
+             unsubUsers = onSnapshot(userDocRef, (doc) => {
+                if (doc.exists()) {
+                    setUsers([{ ...doc.data(), uid: doc.id } as User]);
                 }
-            }
-        };
+             });
+        }
+        
+        const booksQuery = query(collectionGroup(firestore, 'books'));
+        unsubBooks = onSnapshot(booksQuery, (snapshot) => {
+            const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
+            setBooks(booksData);
+            setDataLoading(false);
+        }, (error) => {
+            const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
+            errorEmitter.emit('permission-error', permissionError);
+            setBooks([]);
+            setDataLoading(false);
+        });
 
-        loadData();
 
         return () => {
-            active = false;
+            unsubUsers();
+            unsubBooks();
         };
     }, [firestore, user]);
 
@@ -529,5 +507,7 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
 
     
