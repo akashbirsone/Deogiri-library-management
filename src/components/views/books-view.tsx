@@ -53,7 +53,7 @@ export function BooksView() {
     addBook,
     updateBook,
     deleteBook,
-    loading: appLoading,
+    seedDatabase,
   } = useApp();
 
   const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(null);
@@ -68,6 +68,13 @@ export function BooksView() {
   const selectedDepartment = React.useMemo(() => departments.find((d) => d.id === selectedDeptId), [selectedDeptId]);
   const selectedCourse = React.useMemo(() => selectedDepartment?.courses.find((c) => c.id === selectedCourseId), [selectedDepartment, selectedCourseId]);
   const selectedSemester = React.useMemo(() => selectedCourse?.semesters.find((s) => s.id === selectedSemesterId), [selectedCourse, selectedSemesterId]);
+
+  React.useEffect(() => {
+    if (selectedSemester && user?.role === "admin") {
+      seedDatabase(selectedDeptId!, selectedCourseId!, selectedSemesterId!);
+    }
+  }, [selectedSemester, selectedDeptId, selectedCourseId, selectedSemesterId, seedDatabase, user]);
+
 
   const getPath = (subjectName: string) => {
     if (!selectedDeptId || !selectedCourseId || !selectedSemesterId || !subjectName) return null;
@@ -214,13 +221,7 @@ export function BooksView() {
         </CardContent>
       </Card>
 
-      {appLoading && selectedSemesterId && (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
-
-      {!appLoading && selectedSemester && (
+      {selectedSemester && (
          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {selectedSemester.subjects.map((subject) => {
             const subjectBooks = booksForSelectedFilters.filter(
@@ -429,3 +430,5 @@ const BookForm = ({
     </DialogContent>
   );
 };
+
+    

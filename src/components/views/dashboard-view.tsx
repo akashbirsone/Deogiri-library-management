@@ -17,10 +17,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 export function DashboardView() {
-  const { user, loading } = useApp();
+  const { user } = useApp();
 
-  if (loading || !user) {
-    return <DashboardSkeleton />;
+  if (!user) {
+    return (
+        <div className="flex flex-col gap-6">
+            <Skeleton className="h-9 w-1/2" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+                <Skeleton className="h-80" />
+                <Skeleton className="h-80" />
+            </div>
+        </div>
+    )
   }
 
   switch (user.role) {
@@ -31,29 +45,12 @@ export function DashboardView() {
     case "student":
       return <StudentDashboard />;
     default:
-      return <DashboardSkeleton />;
+        return <div>Loading...</div>;
   }
 }
 
-const DashboardSkeleton = () => (
-    <div className="flex flex-col gap-6">
-        <Skeleton className="h-9 w-1/2" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-            <Skeleton className="h-80" />
-            <Skeleton className="h-80" />
-        </div>
-    </div>
-)
-
 const AdminDashboard = () => {
-    const { books: allBooks, users, loading: appLoading } = useApp();
-    const { toast } = useToast();
+    const { books: allBooks, users } = useApp();
     
     const borrowedBooksCount = allBooks.filter(b => !b.isAvailable).length;
     const totalStudents = users.filter(u => u.role === 'student').length;
@@ -87,11 +84,6 @@ const AdminDashboard = () => {
             return acc;
         }, [] as {name: string, borrowed: number}[])
         .sort((a,b) => b.borrowed - a.borrowed).slice(0, 5);
-        
-
-  if (appLoading) {
-      return <DashboardSkeleton />
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -233,7 +225,7 @@ const AdminDashboard = () => {
 };
 
 const LibrarianDashboard = () => {
-    const { books, users, loading: appLoading } = useApp();
+    const { books, users } = useApp();
     const borrowedBooksCount = books.filter(b => !b.isAvailable).length;
     const totalBooks = books.length;
     const availableBooks = totalBooks - borrowedBooksCount;
@@ -246,10 +238,6 @@ const LibrarianDashboard = () => {
     
     const allBorrowedItems = (users.filter(u => u.role === 'student') as Student[])
         .flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h})));
-
-    if (appLoading) {
-        return <DashboardSkeleton />
-    }
 
     return (
     <div className="flex flex-col gap-6">
@@ -329,7 +317,7 @@ const LibrarianDashboard = () => {
 };
 
 const StudentDashboard = () => {
-  const { user, books, loading: appLoading } = useApp();
+  const { user, books } = useApp();
   const studentProfile = user as Student;
   const [isClient, setIsClient] = React.useState(false);
 
@@ -346,10 +334,6 @@ const StudentDashboard = () => {
     .map(item => ({...item, book: books.find(b => b.id === item.bookId)}))
     .filter(item => item.book)
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-  if (appLoading) {
-    return <DashboardSkeleton />
-  }
 
   return (
     <div className="flex flex-col gap-6">

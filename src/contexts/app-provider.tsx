@@ -44,6 +44,7 @@ interface AppContextType {
   deleteBook: (path: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
+  seedDatabase: (deptId: string, courseId: string, semId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -54,7 +55,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
@@ -132,11 +132,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!firestore || !user) {
-            setDataLoading(false);
             return;
         }
 
-        setDataLoading(true);
         let unsubUsers: () => void = () => {};
         let unsubBooks: () => void = () => {};
 
@@ -162,12 +160,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         unsubBooks = onSnapshot(booksQuery, (snapshot) => {
             const booksData = snapshot.docs.map(doc => ({ id: doc.id, path: doc.ref.path, ...doc.data() } as Book));
             setBooks(booksData);
-            setDataLoading(false);
         }, (error) => {
             const permissionError = new FirestorePermissionError({ path: '/books (collectionGroup)', operation: 'list' });
             errorEmitter.emit('permission-error', permissionError);
             setBooks([]);
-            setDataLoading(false);
         });
 
 
@@ -388,12 +384,69 @@ const returnBook = async (bookId: string) => {
         });
     };
 
+    const seedDatabase = useCallback(async (deptId: string, courseId: string, semId: string) => {
+        if (!firestore || user?.role !== 'admin') return;
+
+        const department = departments.find(d => d.id === deptId);
+        const course = department?.courses.find(c => c.id === courseId);
+        const semester = course?.semesters.find(s => s.id === semId);
+
+        if (!semester) return;
+
+        const batch = writeBatch(firestore);
+        let booksAddedCount = 0;
+
+        for (const subject of semester.subjects) {
+            const booksPath = `departments/${deptId}/courses/${courseId}/semesters/${semId}/subjects/${subject.name}/books`;
+            const booksCollectionRef = collection(firestore, booksPath);
+            
+            const q = query(booksCollectionRef, limit(1));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                const newBook: Omit<Book, 'id' | 'path'> = {
+                    title: subject.name,
+                    author: "Auto-Generated",
+                    subject: subject.name,
+                    isAvailable: true,
+                    coverImage: subject.coverImage || `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                    coverImageHint: subject.name,
+                    addedBy: "system-seed",
+                    addedDate: new Date().toISOString(),
+                    department: deptId,
+                    course: courseId,
+                    semester: semId,
+                };
+                const newBookRef = doc(booksCollectionRef);
+                batch.set(newBookRef, newBook);
+                booksAddedCount++;
+            }
+        }
+
+        if (booksAddedCount > 0) {
+            try {
+                await batch.commit();
+                toast({
+                    title: "Database Seeded",
+                    description: `${booksAddedCount} dummy book(s) have been added.`,
+                });
+            } catch (error) {
+                console.error("Error seeding database:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Seeding Failed",
+                    description: "Could not add dummy books to the database.",
+                });
+            }
+        }
+    }, [firestore, user, toast]);
+
   return (
     <AppContext.Provider value={{
         user,
         setUser,
         authUser,
-        loading: authLoading || dataLoading,
+        loading: authLoading,
         firestore,
         books,
         users,
@@ -408,6 +461,7 @@ const returnBook = async (bookId: string) => {
         deleteBook,
         updateUser,
         deleteUser,
+        seedDatabase,
     }}>
       {children}
     </AppContext.Provider>
