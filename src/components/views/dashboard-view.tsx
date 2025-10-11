@@ -13,13 +13,28 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Student, Book as BookType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export function DashboardView() {
-  const { user } = useApp();
+  const { user, loading } = useApp();
 
-  if (!user) {
-    return <div className="text-center py-16">Loading dashboard...</div>;
+  if (loading || !user) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-9 w-1/2" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+        </div>
+      </div>
+    );
   }
 
   switch (user.role) {
@@ -35,7 +50,7 @@ export function DashboardView() {
 }
 
 const AdminDashboard = () => {
-    const { books: allBooks, users, seedDatabase } = useApp();
+    const { books: allBooks, users, seedDatabase, loading: appLoading } = useApp();
     const { toast } = useToast();
     
     const borrowedBooksCount = allBooks.filter(b => !b.isAvailable).length;
@@ -91,6 +106,22 @@ const AdminDashboard = () => {
         }
     }
 
+  if (appLoading) {
+      return (
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-9 w-1/2" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+            </div>
+          </div>
+      )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -236,7 +267,7 @@ const AdminDashboard = () => {
 };
 
 const LibrarianDashboard = () => {
-    const { books, users } = useApp();
+    const { books, users, loading: appLoading } = useApp();
     const borrowedBooksCount = books.filter(b => !b.isAvailable).length;
     const totalBooks = books.length;
     const availableBooks = totalBooks - borrowedBooksCount;
@@ -249,6 +280,20 @@ const LibrarianDashboard = () => {
     
     const allBorrowedItems = (users.filter(u => u.role === 'student') as Student[])
         .flatMap(s => (s.borrowHistory || []).filter(h => !h.returnDate).map(h => ({student: s, history: h})));
+
+    if (appLoading) {
+      return (
+          <div className="flex flex-col gap-6">
+            <Skeleton className="h-9 w-1/2" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+            </div>
+          </div>
+      )
+    }
 
     return (
     <div className="flex flex-col gap-6">
@@ -328,7 +373,7 @@ const LibrarianDashboard = () => {
 };
 
 const StudentDashboard = () => {
-  const { user, books } = useApp();
+  const { user, books, loading: appLoading } = useApp();
   const studentProfile = user as Student;
   const [isClient, setIsClient] = React.useState(false);
 
@@ -345,6 +390,20 @@ const StudentDashboard = () => {
     .map(item => ({...item, book: books.find(b => b.id === item.bookId)}))
     .filter(item => item.book)
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  if (appLoading) {
+    return (
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-9 w-1/2" />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+              <Skeleton className="h-28" />
+          </div>
+          <Skeleton className="h-80" />
+        </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
