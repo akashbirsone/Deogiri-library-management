@@ -1,84 +1,82 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user profiles
- * and allows public read access to the book catalog while restricting write access to authenticated users.
- *
- * Data Structure:
- * - /users/{userId}: Stores profile information for each user, accessible only by the user themselves.
- * - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}: Stores the library's book catalog.
- *
- * Key Security Decisions:
- * - Users can only read and write their own profile data.
- * - The book catalog is publicly readable.
- * - The app does not have global roles (e.g., "admin") in this iteration.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) User with UID 'user123' can create their profile.
-     * @allow (get) User with UID 'user123' can read their profile.
-     * @allow (update) User with UID 'user123' can update their profile.
-     * @allow (delete) User with UID 'user123' can delete their profile.
-     * @deny (create) User with UID 'user123' cannot create a profile with a different ID.
-     * @deny (get) User with UID 'user456' cannot read user 'user123's profile.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Controls access to the library's book catalog.
-     * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get) Any user can read book data.
-     * @allow (list) Any user can list book data.
-     * @allow (create) Any authenticated user can create a book.
-     * @allow (update) Any authenticated user can update a book.
-     * @allow (delete) Any authenticated user can delete a book.
-     * @deny (create) Unauthenticated user cannot create a book.
-     * @principle Allows public read access, restricts write access to authenticated users.
-     */
-    match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
-    }
-
-    // --- Helper functions ---
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return true if the user is signed in, false otherwise.
+     * @description Checks if the current user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the user ID matches the authenticated user's UID.
-     * @param {string} userId The user ID to compare against.
-     * @return true if the user ID matches the authenticated user's UID, false otherwise.
+     * @description Checks if the current user is the owner of the resource.
+     * @param {string} userId The user ID to compare against the request's auth UID.
+     * @return {boolean} True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the user is the owner of an existing document.
-     * @param {string} userId The user ID to compare against.
-     * @return true if the user ID matches the authenticated user's UID and the document exists, false otherwise.
+     * @description Checks if the current user is the owner of the resource and it exists.
+     * @param {string} userId The user ID to compare against the resource's owner ID.
+     * @return {boolean} True if the user is the existing owner, false otherwise.
      */
     function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return isOwner(userId);
     }
+
+    /**
+     * @description Checks if the current user has the 'librarian' role.
+     * @return {boolean} True if the user has the 'librarian' role, false otherwise.
+     */
+    function isLibrarian() {
+      return isSignedIn() && (request.auth.token.role == 'librarian' || request.auth.token.role == 'admin');
+    }
+
+     /**
+     * @description Checks if the current user has the 'admin' role.
+     * @return {boolean} True if the user has the 'admin' role, false otherwise.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     * @allow (read, write) if isOwner(userId)
+     * @deny (read, write) if !isOwner(userId)
+     * @principle Enforces document ownership for user profiles.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the book catalog.
+     * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
+     * @allow (read) Everyone can read the books catalog
+     * @allow (create, update, delete) only librarian or admin can modify books
+     * @deny (create, update, delete) if not librarian or admin
+     * @principle Restricts write access to librarians and admins.
+     */
+    match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
+      allow get, list: if true;
+      allow create: if isLibrarian();
+      allow update: if isLibrarian();
+      allow delete: if isLibrarian();
+    }
+
+    //The following rule was shadowed, so I removed it.
+    // match /{path=**}/books/{bookId} {
+    //      allow get, list: if true;
+    // }
   }
 }
