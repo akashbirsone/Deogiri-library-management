@@ -1,74 +1,59 @@
 /**
- * @description This ruleset enforces a role-based access control model for a library management system.
- *              Users can have roles of 'student', 'librarian', or 'admin'.
- *              Students can only read book information. Librarians and admins can manage books.
+ * @description This ruleset enforces a strict user-ownership model for user profiles and allows public read access to the book catalog while restricting write access.
  * @dataStructure
- *   - /users/{userId}: Stores user profile information, including role.
- *   - /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}: Stores book details.
+ *   - User profiles are stored under `/users/{userId}`.
+ *   - Books are stored in a hierarchical structure: `/departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}`.
  * @keySecurityDecisions
- *   - Only authenticated users can access any data.
- *   - Users can only read their own user document.
- *   - Book creation, updating, and deletion are restricted to librarians and admins.
- *   - Listing of users is disallowed for security reasons.
+ *   - Users can only read and write their own profile data.
+ *   - The book catalog is publicly readable, but write access is restricted to authorized users (implementation pending - TODO).
+ *   - Listing of user documents is forbidden to prevent data leakage.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows users to read their own profile information.
+     * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (get) User with uid 'user123' can read /users/user123.
-     * @deny (get) User with uid 'user456' cannot read /users/user123.
-     * @allow (create) User with uid 'user123' can create /users/user123.
-     * @deny (create) User with uid 'user456' cannot create /users/user123.
-     * @deny (update) Any user cannot update another user's profile.
-     * @deny (delete) Any user cannot delete another user's profile.
-     * @principle Enforces user-ownership.
+     * @allow (create) - A user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete) - A user can only read, update, or delete their own profile.
+     * @deny (create) - A user cannot create a profile for another user.
+     * @deny (get, update, delete) - A user cannot read, update, or delete another user's profile.
+     * @deny (list) - Listing all user documents is not allowed.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows anyone to read books, but only librarians and admins can create, update, or delete them.
+     * @description Controls access to the book catalog.
      * @path /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId}
-     * @allow (get) Any user can read book data.
-     * @allow (list) Any user can list book data.
-     * @allow (create) Only librarians and admins can create books.
-     * @allow (update) Only librarians and admins can update books.
-     * @allow (delete) Only librarians and admins can delete books.
-     * @deny (create) Student cannot create a book.
-     * @deny (update) Student cannot update a book.
-     * @deny (delete) Student cannot delete a book.
-     * @principle Enforces role-based access for book management.
+     * @allow (get, list) - Any user can read book information.
+     * @deny (create, update, delete) - Only authorized users can modify the book catalog (authorization logic to be implemented).
+     * @principle Allows public read access but restricts write access to authorized users.
      */
     match /departments/{deptId}/courses/{courseId}/semesters/{semId}/subjects/{subjectId}/books/{bookId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && isAdminOrLibrarian();
-      allow update: if isSignedIn() && isAdminOrLibrarian() && resource != null;
-      allow delete: if isSignedIn() && isAdminOrLibrarian() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Implement write access control for authorized users (e.g., librarians, admins).
     }
 
+
+    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-    }
-
-    function isAdminOrLibrarian() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'librarian'];
+        return isOwner(userId) && resource != null;
     }
   }
 }
