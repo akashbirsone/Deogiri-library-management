@@ -430,5 +430,3 @@ const BookForm = ({
     </DialogContent>
   );
 };
-
-    
