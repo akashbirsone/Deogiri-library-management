@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Book as BookType } from "@/types";
+import { Book as BookType, Student } from "@/types";
 import {
   Select,
   SelectContent,
@@ -56,8 +56,11 @@ export function BooksView() {
     seedDatabase,
   } = useApp();
 
-  const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
+  const isStudent = user?.role === 'student';
+  const studentProfile = isStudent ? (user as Student) : null;
+
+  const [selectedDeptId, setSelectedDeptId] = React.useState<string | null>(studentProfile?.department || null);
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(studentProfile?.course || null);
   const [selectedSemesterId, setSelectedSemesterId] = React.useState<string | null>(null);
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -68,6 +71,13 @@ export function BooksView() {
   const selectedDepartment = React.useMemo(() => departments.find((d) => d.id === selectedDeptId), [selectedDeptId]);
   const selectedCourse = React.useMemo(() => selectedDepartment?.courses.find((c) => c.id === selectedCourseId), [selectedDepartment, selectedCourseId]);
   const selectedSemester = React.useMemo(() => selectedCourse?.semesters.find((s) => s.id === selectedSemesterId), [selectedCourse, selectedSemesterId]);
+
+  React.useEffect(() => {
+    if (studentProfile) {
+        setSelectedDeptId(studentProfile.department || null);
+        setSelectedCourseId(studentProfile.course || null);
+    }
+  }, [studentProfile]);
 
   React.useEffect(() => {
     if (selectedSemester && user?.role === "admin") {
@@ -107,7 +117,7 @@ export function BooksView() {
         const path = getPath(formSubject);
         if(!path) return;
 
-      const newBook: Omit<Book, "id" | "path"> = {
+      const newBook: Omit<BookType, "id" | "path"> = {
         title: bookData.title || "",
         author: bookData.author || "",
         subject: formSubject,
@@ -166,7 +176,11 @@ export function BooksView() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="department-select">Department</Label>
-              <Select onValueChange={(value) => { setSelectedDeptId(value); setSelectedCourseId(null); setSelectedSemesterId(null);}}>
+              <Select 
+                onValueChange={(value) => { setSelectedDeptId(value); setSelectedCourseId(null); setSelectedSemesterId(null);}}
+                value={selectedDeptId || ""}
+                disabled={isStudent}
+              >
                 <SelectTrigger id="department-select">
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
@@ -183,7 +197,7 @@ export function BooksView() {
               <Label htmlFor="course-select">Course</Label>
               <Select
                 onValueChange={(value) => { setSelectedCourseId(value); setSelectedSemesterId(null); }}
-                disabled={!selectedDepartment}
+                disabled={!selectedDepartment || isStudent}
                 value={selectedCourseId || ""}
               >
                 <SelectTrigger id="course-select">
@@ -429,4 +443,6 @@ const BookForm = ({
       </form>
     </DialogContent>
   );
-};
+};  
+
+    
