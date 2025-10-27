@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database, Loader2 } from "lucide-react";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database, Loader2, BarChart2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -139,14 +139,22 @@ const AdminDashboard = () => {
             <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
           </CardHeader>
           <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={chartData}>
-                      <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))'}}/>
-                      <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-              </ResponsiveContainer>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={chartData}>
+                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))'}}/>
+                        <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[350px] flex flex-col items-center justify-center text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                  <BarChart2 className="h-12 w-12" />
+                  <p className="mt-4 font-medium">No data available</p>
+                  <p className="text-sm">No books have been borrowed recently.</p>
+                </div>
+              )}
           </CardContent>
         </Card>
         <Card>
@@ -423,5 +431,3 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
-    

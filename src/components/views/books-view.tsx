@@ -179,9 +179,9 @@ export function BooksView() {
               <Select 
                 onValueChange={(value) => { setSelectedDeptId(value); setSelectedCourseId(null); setSelectedSemesterId(null);}}
                 value={selectedDeptId || ""}
-                disabled={isStudent}
+                disabled={false}
               >
-                <SelectTrigger id="department-select">
+                <SelectTrigger id="department-select" >
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -197,7 +197,7 @@ export function BooksView() {
               <Label htmlFor="course-select">Course</Label>
               <Select
                 onValueChange={(value) => { setSelectedCourseId(value); setSelectedSemesterId(null); }}
-                disabled={!selectedDepartment || isStudent}
+                disabled={!selectedDepartment}
                 value={selectedCourseId || ""}
               >
                 <SelectTrigger id="course-select">

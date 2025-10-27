@@ -77,7 +77,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
             if (userDoc.exists()) {
               const userData = userDoc.data() as User;
-              setUser(userData);
+              setUser({ ...userData, uid: fbUser.uid } as User);
               updateDoc(userDocRef, { lastLogin: serverTimestamp() }).catch(e => console.error("Failed to update last login", e));
             } else {
               const isAdmin = fbUser.email === "deogiri_admin@college.com";
@@ -85,7 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               
               const newUser: Omit<User, 'uid'> & { createdAt: any, lastLogin: any } = {
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || "New User",
-                email: fbUser.email,
+                email: fbUser.email || "",
                 role: newUserRole,
                 avatar: fbUser.photoURL || `https://i.pravatar.cc/150?u=${fbUser.uid}`,
                 createdAt: serverTimestamp(),
@@ -324,9 +324,10 @@ const returnBook = async (bookId: string) => {
         await batch.commit();
         
         const bookDoc = await getDoc(bookDocRef);
+        const bookTitle = bookDoc.data()?.title || "Unknown Book";
         
         toast({
-            title: `Book "${bookDoc.data()?.title}" Returned`,
+          title: `Book "${bookTitle}" Returned`,
             description: fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!',
         });
 
