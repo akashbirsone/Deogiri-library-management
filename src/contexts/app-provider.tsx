@@ -242,12 +242,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: "destructive", title: "Unavailable", description: "This book is currently unavailable." });
         return;
     }
-
-    if (studentProfile.department !== bookToBorrow.department || studentProfile.course !== bookToBorrow.course) {
-      toast({ variant: "destructive", title: "Borrowing Restricted", description: "You can only borrow books from your own department and course." });
-      return;
-    }
-
     const bookDocRef = doc(firestore, bookToBorrow.path);
 
     const today = new Date();
