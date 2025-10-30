@@ -161,13 +161,13 @@ const AdminDashboard = () => {
             <CardHeader>
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Book Title</TableHead>
-                            <TableHead>Student</TableHead>
-                            <TableHead>Due Date</TableHead>
+                            <TableHead className="min-w-[200px]">Book Title</TableHead>
+                            <TableHead className="min-w-[150px]">Student</TableHead>
+                            <TableHead className="min-w-[120px]">Due Date</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -191,14 +191,14 @@ const AdminDashboard = () => {
             <CardHeader>
                 <CardTitle className="font-headline">Student Overview</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Student</TableHead>
-                            <TableHead>Department</TableHead>
-                            <TableHead>Course</TableHead>
-                            <TableHead>Books on Loan</TableHead>
+                            <TableHead className="min-w-[250px]">Student</TableHead>
+                            <TableHead className="min-w-[200px]">Department</TableHead>
+                            <TableHead className="min-w-[150px]">Course</TableHead>
+                            <TableHead className="text-center">On Loan</TableHead>
                             <TableHead className="text-right">Fines</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -212,14 +212,14 @@ const AdminDashboard = () => {
                                             <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="font-medium">{student.name}</p>
-                                            <p className="text-xs text-muted-foreground">{student.email}</p>
+                                            <p className="font-medium whitespace-nowrap">{student.name}</p>
+                                            <p className="text-xs text-muted-foreground whitespace-nowrap">{student.email}</p>
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell>{student.department}</TableCell>
-                                <TableCell>{student.course}</TableCell>
-                                <TableCell className="font-medium">{(student.borrowHistory || []).filter(h => !h.returnDate).length}</TableCell>
+                                <TableCell className="whitespace-nowrap">{student.department}</TableCell>
+                                <TableCell className="whitespace-nowrap">{student.course}</TableCell>
+                                <TableCell className="text-center font-medium">{(student.borrowHistory || []).filter(h => !h.returnDate).length}</TableCell>
                                 <TableCell className="text-right font-medium">₹{student.fines || 0}</TableCell>
                             </TableRow>
                         ))}
@@ -296,13 +296,13 @@ const LibrarianDashboard = () => {
             <CardHeader>
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Book Title</TableHead>
-                            <TableHead>Student</TableHead>
-                            <TableHead>Due Date</TableHead>
+                            <TableHead className="min-w-[200px]">Book Title</TableHead>
+                            <TableHead className="min-w-[150px]">Student</TableHead>
+                            <TableHead className="min-w-[120px]">Due Date</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -393,12 +393,12 @@ const StudentDashboard = () => {
                 <CardTitle className="font-headline">Upcoming Returns</CardTitle>
                 <CardDescription>Books you need to return soon.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
                 {upcomingReturns.length > 0 ? (
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Book Title</TableHead>
+                            <TableHead className="min-w-[200px]">Book Title</TableHead>
                             <TableHead>Due Date</TableHead>
                             <TableHead>Time Left</TableHead>
                         </TableRow>
@@ -431,3 +431,5 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    

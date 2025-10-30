@@ -73,11 +73,11 @@ export function UsersView() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>User</TableHead>
+                                <TableHead className="min-w-[250px]">User</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>
                                 <span className="sr-only">Actions</span>
@@ -94,8 +94,8 @@ export function UsersView() {
                                                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="font-medium">{user.name}</p>
-                                                <p className="text-sm text-muted-foreground">
+                                                <p className="font-medium whitespace-nowrap">{user.name}</p>
+                                                <p className="text-sm text-muted-foreground whitespace-nowrap">
                                                 {user.email}
                                                 </p>
                                             </div>
@@ -189,3 +189,5 @@ const UserForm = ({ user, onSubmit, onClose }: { user: User; onSubmit: (data: Us
         </DialogContent>
     );
 };
+
+    
