@@ -90,7 +90,7 @@ const AdminDashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
       </div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Books</CardTitle>
