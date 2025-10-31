@@ -47,21 +47,17 @@ type View = "dashboard" | "books" | "users" | "my-books" | "history" | "settings
 const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onNavigate: (view: View) => void; onLogout: () => void }) => {
     const { user } = useApp();
 
-    const topNavItems = [
+    const navItems = [
         { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { name: "books", label: "Book Catalog", icon: Book },
-        { name: "users", label: "User Management", icon: Users, roles: ["admin", "librarian"] },
-    ];
-    
-    const bottomNavItems = [
+        { name: "books", label: "Catalog", icon: Book },
+        { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
+        { name: "users", label: "Users", icon: Users, roles: ["admin", "librarian"] },
         { name: "settings", label: "Profile", icon: Settings },
-        { name: "help", label: "Help", icon: HelpCircle },
     ];
     
     if (!user) return null;
     
-    const visibleTopItems = topNavItems.filter(item => !item.roles || item.roles.includes(user.role));
-    const allVisibleItems = [...visibleTopItems, ...bottomNavItems];
+    const visibleItems = navItems.filter(item => !item.roles || item.roles.includes(user.role));
 
     return (
         <>
@@ -79,13 +75,13 @@ const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onN
 
             {/* Bottom Fixed Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background">
-                <div className={`grid grid-cols-${allVisibleItems.length} items-stretch h-16`}>
-                    {allVisibleItems.map(item => (
+                <div className="flex h-16 items-stretch">
+                    {visibleItems.map(item => (
                         <button
                             key={item.name}
                             onClick={() => onNavigate(item.name as View)}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors",
+                                "flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors",
                                 activeView === item.name ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
                             )}
                         >
