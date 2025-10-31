@@ -140,7 +140,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
+                <ResponsiveContainer width="100%" aspect={2} minHeight={300}>
                     <BarChart data={chartData}>
                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
@@ -431,6 +431,8 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
 
     
 
