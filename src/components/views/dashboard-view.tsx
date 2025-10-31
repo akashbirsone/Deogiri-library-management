@@ -133,7 +133,7 @@ const AdminDashboard = () => {
         </Card>
       </div>
       
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-1">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
@@ -431,5 +431,7 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
 
     
