@@ -205,9 +205,7 @@ function PageContent() {
       </Sidebar>
       <SidebarInset>
         <header className="hidden md:flex h-14 items-center justify-end gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-          <div className="flex flex-1 items-center justify-end gap-4">
-            <UserNav />
-          </div>
+          <UserNav />
         </header>
         <main className="flex-1 p-4 sm:p-6">{renderView()}</main>
       </SidebarInset>
