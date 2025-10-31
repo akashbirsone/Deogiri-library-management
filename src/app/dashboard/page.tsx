@@ -79,7 +79,7 @@ const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onN
 
             {/* Bottom Fixed Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background">
-                <div className={`grid h-16 grid-cols-${allVisibleItems.length} items-stretch`}>
+                <div className={`grid grid-cols-${allVisibleItems.length} items-stretch h-16`}>
                     {allVisibleItems.map(item => (
                         <button
                             key={item.name}
@@ -205,7 +205,7 @@ function PageContent() {
       </Sidebar>
       <SidebarInset>
         <header className="hidden md:flex h-14 items-center justify-end gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-          <UserNav />
+            <UserNav />
         </header>
         <main className="flex-1 p-4 sm:p-6">{renderView()}</main>
       </SidebarInset>
