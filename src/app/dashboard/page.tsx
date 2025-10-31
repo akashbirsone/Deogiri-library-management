@@ -59,6 +59,9 @@ const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onN
     ];
     
     if (!user) return null;
+    
+    const visibleTopItems = topNavItems.filter(item => !item.roles || item.roles.includes(user.role));
+    const allVisibleItems = [...visibleTopItems, ...bottomNavItems];
 
     return (
         <>
@@ -76,23 +79,8 @@ const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onN
 
             {/* Bottom Fixed Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background">
-                <div className="grid h-16 grid-cols-5 items-stretch">
-                    {topNavItems.map(item => (
-                       (!item.roles || item.roles.includes(user.role)) && (
-                            <button
-                                key={item.name}
-                                onClick={() => onNavigate(item.name as View)}
-                                className={cn(
-                                    "flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors",
-                                    activeView === item.name ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
-                                )}
-                            >
-                                <item.icon className="h-5 w-5" />
-                                <span>{item.label}</span>
-                            </button>
-                       )
-                    ))}
-                     {bottomNavItems.map(item => (
+                <div className={`grid h-16 grid-cols-${allVisibleItems.length} items-stretch`}>
+                    {allVisibleItems.map(item => (
                         <button
                             key={item.name}
                             onClick={() => onNavigate(item.name as View)}
@@ -216,8 +204,7 @@ function PageContent() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="hidden md:flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-            <div/>
+        <header className="hidden md:flex h-14 items-center justify-end gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
           <div className="flex flex-1 items-center justify-end gap-4">
             <UserNav />
           </div>
