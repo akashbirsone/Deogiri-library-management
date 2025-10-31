@@ -90,7 +90,7 @@ const AdminDashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Books</CardTitle>
@@ -134,11 +134,11 @@ const AdminDashboard = () => {
       </div>
       
       <div className="grid gap-6 lg:grid-cols-1">
-        <Card>
+        <Card className="hidden md:block">
           <CardHeader>
             <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" aspect={2} minHeight={300}>
                     <BarChart data={chartData}>
@@ -161,7 +161,35 @@ const AdminDashboard = () => {
             <CardHeader>
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+             <CardContent className="md:hidden">
+                <div className="flex space-x-4 overflow-x-auto pb-4">
+                    {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
+                        const book = allBooks.find(b => b.id === history.bookId);
+                        return (
+                            <div key={`${student.uid}-${history.bookId}`} className="min-w-[250px] flex-shrink-0">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base truncate">{book?.title || 'Unknown Book'}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Student</span>
+                                            <span className="font-medium">{student.name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Due Date</span>
+                                            <span className="font-medium">{isClient ? format(new Date(history.dueDate), "PP") : ''}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )
+                    }) : (
+                        <div className="text-center py-10 text-muted-foreground w-full">No recently borrowed books.</div>
+                    )}
+                </div>
+            </CardContent>
+            <CardContent className="hidden md:block overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
@@ -296,7 +324,35 @@ const LibrarianDashboard = () => {
             <CardHeader>
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+             <CardContent className="md:hidden">
+                <div className="flex space-x-4 overflow-x-auto pb-4">
+                    {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
+                        const book = books.find(b => b.id === history.bookId);
+                        return (
+                            <div key={`${student.uid}-${history.bookId}`} className="min-w-[250px] flex-shrink-0">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base truncate">{book?.title || 'Unknown Book'}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Student</span>
+                                            <span className="font-medium">{student.name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Due Date</span>
+                                            <span className="font-medium">{isClient ? format(new Date(history.dueDate), "PP") : ''}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )
+                    }) : (
+                        <div className="text-center py-10 text-muted-foreground w-full">No recently borrowed books.</div>
+                    )}
+                </div>
+            </CardContent>
+            <CardContent className="hidden md:block overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
