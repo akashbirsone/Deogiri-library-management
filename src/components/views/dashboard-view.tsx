@@ -158,11 +158,11 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
         <Card>
-            <CardHeader>
+            <CardHeader className="overflow-x-auto">
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-             <CardContent className="md:hidden">
-                <div className="flex space-x-4 overflow-x-auto pb-4">
+             <CardContent className="md:hidden overflow-x-auto">
+                <div className="flex space-x-4 pb-4">
                     {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
                         const book = allBooks.find(b => b.id === history.bookId);
                         return (
@@ -321,11 +321,11 @@ const LibrarianDashboard = () => {
         </Card>
       </div>
        <Card>
-            <CardHeader>
+            <CardHeader className="overflow-x-auto">
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-             <CardContent className="md:hidden">
-                <div className="flex space-x-4 overflow-x-auto pb-4">
+             <CardContent className="md:hidden overflow-x-auto">
+                <div className="flex space-x-4 pb-4">
                     {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
                         const book = books.find(b => b.id === history.bookId);
                         return (
@@ -487,6 +487,8 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+    
 
     
 
