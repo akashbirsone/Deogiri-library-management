@@ -90,7 +90,7 @@ const AdminDashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:p-0">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 sm:pb-2">
             <CardTitle className="text-sm font-medium">Total Books</CardTitle>
@@ -158,10 +158,10 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
         <Card>
-            <CardHeader className="overflow-x-auto">
+            <CardHeader className="overflow-x-auto min-w-0">
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-             <CardContent className="md:hidden overflow-x-auto">
+             <CardContent className="md:hidden overflow-x-auto min-w-0">
                 <div className="flex space-x-4 pb-4">
                     {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
                         const book = allBooks.find(b => b.id === history.bookId);
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
                     )}
                 </div>
             </CardContent>
-            <CardContent className="hidden md:block overflow-x-auto">
+            <CardContent className="hidden md:block overflow-x-auto min-w-0">
                  <Table>
                     <TableHeader>
                         <TableRow>
@@ -278,7 +278,7 @@ const LibrarianDashboard = () => {
     return (
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">Librarian Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 md:p-0">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Books</CardTitle>
@@ -321,10 +321,10 @@ const LibrarianDashboard = () => {
         </Card>
       </div>
        <Card>
-            <CardHeader className="overflow-x-auto">
+            <CardHeader className="overflow-x-auto min-w-0">
                 <CardTitle className="font-headline">Recently Borrowed</CardTitle>
             </CardHeader>
-             <CardContent className="md:hidden overflow-x-auto">
+             <CardContent className="md:hidden overflow-x-auto min-w-0">
                 <div className="flex space-x-4 pb-4">
                     {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({student, history}) => {
                         const book = books.find(b => b.id === history.bookId);
@@ -352,7 +352,7 @@ const LibrarianDashboard = () => {
                     )}
                 </div>
             </CardContent>
-            <CardContent className="hidden md:block overflow-x-auto">
+            <CardContent className="hidden md:block overflow-x-auto min-w-0">
                  <Table>
                     <TableHeader>
                         <TableRow>
@@ -402,7 +402,7 @@ const StudentDashboard = () => {
   return (
     <div className="flex flex-col gap-6">
        <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 md:p-0">
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Books on Loan</CardTitle>
@@ -449,7 +449,7 @@ const StudentDashboard = () => {
                 <CardTitle className="font-headline">Upcoming Returns</CardTitle>
                 <CardDescription>Books you need to return soon.</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent className="overflow-x-auto min-w-0">
                 {upcomingReturns.length > 0 ? (
                 <Table>
                     <TableHeader>
@@ -487,25 +487,3 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
