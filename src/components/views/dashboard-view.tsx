@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useApp } from "@/contexts/app-provider";
-import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database, Loader2, BarChart2,} from "lucide-react";
+import { Book, CheckCircle, Clock, Users, IndianRupee, Library, CalendarClock, Database, Loader2, BarChart2, ChevronRight,} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -158,8 +158,16 @@ const AdminDashboard = () => {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="overflow-x-auto">
+                    <CardHeader className="flex items-center justify-between">
                         <CardTitle className="font-headline">Recently Borrowed</CardTitle>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="md:hidden"
+                            onClick={() => alert("Navigate to all borrowed books!")}
+                        >
+                            View all <ChevronRight className="h-4 w-4" />
+                        </Button>
                     </CardHeader>
                     <CardContent className="md:hidden overflow-x-auto min-w-0">
                         <div className="flex space-x-4 pb-4">
@@ -216,11 +224,19 @@ const AdminDashboard = () => {
             </div>
 
             <Card>
-                <CardHeader>
+                 <CardHeader className="flex items-center justify-between">
                     <CardTitle className="font-headline">Student Overview</CardTitle>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="md:hidden"
+                        onClick={() => alert("Navigate to all students!")}
+                    >
+                        View all <ChevronRight className="h-4 w-4" />
+                    </Button>
                 </CardHeader>
                  <CardContent className="md:hidden space-y-4">
-                    {(users.filter(u => u.role === 'student') as Student[]).map(student => (
+                    {(users.filter(u => u.role === 'student') as Student[]).slice(0, 3).map(student => (
                         <Card key={student.uid}>
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <Avatar className="w-10 h-10">
@@ -535,5 +551,7 @@ const StudentDashboard = () => {
         </div>
     );
 };
+
+    
 
     
