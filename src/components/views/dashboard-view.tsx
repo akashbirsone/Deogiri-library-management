@@ -14,6 +14,7 @@ import type { Student, Book as BookType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 
 export function DashboardView() {
@@ -51,6 +52,7 @@ export function DashboardView() {
 
 const AdminDashboard = () => {
     const { books: allBooks, users } = useApp();
+    const router = useRouter();
 
     const borrowedBooksCount = allBooks.filter(b => !b.isAvailable).length;
     const totalStudents = users.filter(u => u.role === 'student').length;
@@ -164,7 +166,7 @@ const AdminDashboard = () => {
                             variant="ghost"
                             size="sm"
                             className="md:hidden"
-                            onClick={() => alert("Navigate to all borrowed books!")}
+                            onClick={() => router.push('/dashboard/borrowed')}
                         >
                             View all <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -230,7 +232,7 @@ const AdminDashboard = () => {
                         variant="ghost"
                         size="sm"
                         className="md:hidden"
-                        onClick={() => alert("Navigate to all students!")}
+                        onClick={() => router.push('/dashboard/students')}
                     >
                         View all <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -555,3 +557,4 @@ const StudentDashboard = () => {
     
 
     
+
