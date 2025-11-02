@@ -158,7 +158,7 @@ const AdminDashboard = () => {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="flex items-center justify-between">
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="font-headline">Recently Borrowed</CardTitle>
                         <Button
                             variant="ghost"
@@ -224,7 +224,7 @@ const AdminDashboard = () => {
             </div>
 
             <Card>
-                 <CardHeader className="flex items-center justify-between">
+                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="font-headline">Student Overview</CardTitle>
                     <Button
                         variant="ghost"
