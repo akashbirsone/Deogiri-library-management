@@ -171,9 +171,9 @@ const AdminDashboard = () => {
                             View all <ChevronRight className="h-4 w-4" />
                         </Button>
                     </CardHeader>
-                    <CardContent className="md:hidden overflow-x-auto min-w-0">
-                        <div className="flex space-x-4 pb-4">
-                            {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({ student, history }) => {
+                    <CardContent className="md:hidden space-y-4">
+                        <div className="min-w-[250px]">
+                            {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 1).map(({ student, history }) => {
                                 const book = allBooks.find(b => b.id === history.bookId);
                                 return (
                                     <div key={`${student.uid}-${history.bookId}`} className="min-w-[250px] flex-shrink-0">
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {allBorrowedItems.slice(0, 5).map(({ student, history }) => {
+                                {allBorrowedItems.slice(0, 1).map(({ student, history }) => {
                                     const book = allBooks.find(b => b.id === history.bookId);
                                     return (
                                         <TableRow key={`${student.uid}-${history.bookId}`}>
@@ -238,7 +238,7 @@ const AdminDashboard = () => {
                     </Button>
                 </CardHeader>
                  <CardContent className="md:hidden space-y-4">
-                    {(users.filter(u => u.role === 'student') as Student[]).slice(0, 3).map(student => (
+                    {(users.filter(u => u.role === 'student') as Student[]).slice(0, 1).map(student => (
                         <Card key={student.uid}>
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <Avatar className="w-10 h-10">
@@ -376,23 +376,9 @@ const LibrarianDashboard = () => {
                 <CardHeader className="overflow-x-auto">
                     <CardTitle className="font-headline">Recently Borrowed</CardTitle>
                 </CardHeader>
-                {/* <CardContent className="md:hidden">
-                    <div className="flex items-center justify-between p-4">
-                        <p className="text-sm text-muted-foreground">
-                            View all details
-                        </p>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => alert('Navigate to full page!')}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </CardContent> */}
-                <CardContent className="md:hidden overflow-x-auto min-w-0">
-                    <div className="flex space-x-4 pb-4">
-                        {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 5).map(({ student, history }) => {
+                <CardContent className="md:hidden space-x-4 pb-4">
+                    <div className="min-w-[250px]">
+                        {allBorrowedItems.length > 0 ? allBorrowedItems.slice(0, 1).map(({ student, history }) => {
                             const book = books.find(b => b.id === history.bookId);
                             return (
                                 <div key={`${student.uid}-${history.bookId}`} className="min-w-[250px] flex-shrink-0">
@@ -520,9 +506,9 @@ const StudentDashboard = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="min-w-[200px]">Book Title</TableHead>
+                                    <TableHead>Book Title</TableHead>
                                     <TableHead>Due Date</TableHead>
-                                    <TableHead>Time Left</TableHead>
+                                    <TableHead className="hidden md:table-cell">Time Left</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -531,9 +517,9 @@ const StudentDashboard = () => {
                                     const isOverdue = new Date() > dueDate;
                                     return (
                                         <TableRow key={`${item.bookId}-${item.borrowDate}`}>
-                                            <TableCell className="font-medium">{item.book?.title}</TableCell>
+                                            <TableCell className="font-medium break-words">{item.book?.title}</TableCell>
                                             <TableCell>{isClient ? format(dueDate, "PPP") : ''}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="hidden md:table-cell">
                                                 <Badge variant={isOverdue ? "destructive" : "outline"}>
                                                     {isClient ? formatDistanceToNow(dueDate, { addSuffix: true }) : ''}
                                                 </Badge>
@@ -553,8 +539,3 @@ const StudentDashboard = () => {
         </div>
     );
 };
-
-    
-
-    
-

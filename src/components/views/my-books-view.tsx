@@ -45,7 +45,7 @@ export function MyBooksView() {
                                     <TableHead>Issue Date</TableHead>
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
+                                    <TableHead className="text-center">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

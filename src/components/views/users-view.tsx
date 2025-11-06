@@ -77,9 +77,9 @@ export function UsersView() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="min-w-[250px]">User</TableHead>
+                                <TableHead>User</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                 <span className="sr-only">Actions</span>
                                 </TableHead>
                             </TableRow>
@@ -94,8 +94,8 @@ export function UsersView() {
                                                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="font-medium whitespace-nowrap">{user.name}</p>
-                                                <p className="text-sm text-muted-foreground whitespace-nowrap">
+                                                <p className="font-medium">{user.name}</p>
+                                                <p className="text-sm text-muted-foreground break-all">
                                                 {user.email}
                                                 </p>
                                             </div>
@@ -104,7 +104,7 @@ export function UsersView() {
                                     <TableCell>
                                         <Badge variant="outline">{user.role}</Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         {canManageUser(user) && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
