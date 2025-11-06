@@ -88,11 +88,11 @@ const AdminDashboard = () => {
         .sort((a, b) => b.borrowed - a.borrowed).slice(0, 5);
 
     return (
-        <div className="flex flex-col gap-6 md:p-0">
+        <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 sm:pb-2">
                         <CardTitle className="text-sm font-medium">Total Books</CardTitle>
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
                     <CardHeader>
                         <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
                     </CardHeader>
-                    <CardContent className="overflow-x-auto">
+                    <CardContent>
                         {chartData.length > 0 ? (
                             <ResponsiveContainer width="100%" aspect={2} minHeight={300}>
                                 <BarChart data={chartData}>

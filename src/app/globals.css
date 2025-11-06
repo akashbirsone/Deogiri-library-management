@@ -103,6 +103,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground md:pt-0 pt-16 pb-16 md:pb-0;
+    @apply bg-background text-foreground pt-16 md:pt-0 pb-16 md:pb-0;
   }
 }
