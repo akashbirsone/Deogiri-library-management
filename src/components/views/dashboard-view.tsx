@@ -88,7 +88,7 @@ const AdminDashboard = () => {
         .sort((a, b) => b.borrowed - a.borrowed).slice(0, 5);
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 p-6 flex-1">
             <div className="flex justify-between items-center">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             </div>
@@ -135,7 +135,7 @@ const AdminDashboard = () => {
                 </Card>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-1">
+            <div className="grid gap-1 lg:grid-cols-1">
                 <Card className="hidden lg:block">
                     <CardHeader>
                         <CardTitle className="font-headline">Most Borrowed Books</CardTitle>
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
                                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ backgroundColor: 'hsl(var(--background))' }} />
-                                    <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="borrowed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
