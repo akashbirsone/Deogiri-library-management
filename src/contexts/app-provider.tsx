@@ -231,6 +231,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     const studentProfile = user as Student;
+
+    const currentlyBorrowedCount = (studentProfile.borrowHistory || []).filter(item => !item.returnDate).length;
+    if (currentlyBorrowedCount >= 3) {
+      toast({
+        variant: "destructive",
+        title: "Borrowing Limit Reached",
+        description: "Borrowing limit of 3 books reached. Please return a book to borrow another."
+      });
+      return;
+    }
+
     const bookToBorrow = books.find(b => b.id === bookId);
     
     if (!bookToBorrow) {
@@ -473,4 +484,5 @@ export const useApp = () => {
   return context;
 };
 
+    
     
