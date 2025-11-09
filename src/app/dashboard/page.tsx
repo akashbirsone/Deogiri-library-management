@@ -51,6 +51,7 @@ const MobileNav = ({ activeView, onNavigate, onLogout }: { activeView: View; onN
         { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
         { name: "books", label: "Catalog", icon: Book },
         { name: "my-books", label: "My Books", icon: Library, roles: ["student"] },
+        { name: "history", label: "History", icon: History, roles: ["student"] },
         { name: "users", label: "Users", icon: Users, roles: ["admin", "librarian"] },
         { name: "settings", label: "Profile", icon: Settings },
     ];
