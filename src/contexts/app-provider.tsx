@@ -299,8 +299,14 @@ const returnBook = async (bookId: string) => {
         toast({ variant: "destructive", title: "Error", description: "Cannot find this book in your borrowed list." });
         return;
     }
+    
+    const bookToReturn = books.find(b => b.id === bookId);
+    if (!bookToReturn) {
+        toast({ variant: "destructive", title: "Error", description: "Book details not found." });
+        return;
+    }
 
-    const bookDocRef = doc(firestore, itemToReturn.bookPath);
+    const bookDocRef = doc(firestore, bookToReturn.path);
     
     try {
         let fine = 0;
@@ -328,17 +334,14 @@ const returnBook = async (bookId: string) => {
 
         await batch.commit();
         
-        const bookDoc = await getDoc(bookDocRef);
-        const bookTitle = bookDoc.data()?.title || "Unknown Book";
-        
         toast({
-          title: `Book "${bookTitle}" Returned`,
+          title: `Book "${bookToReturn.title}" Returned`,
             description: fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!',
         });
 
     } catch (error: any) {
         const permissionError = new FirestorePermissionError({
-            path: itemToReturn.bookPath,
+            path: bookDocRef.path,
             operation: 'update',
             requestResourceData: { isAvailable: true },
         });
