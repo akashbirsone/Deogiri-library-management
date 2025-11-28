@@ -312,9 +312,10 @@ const returnBook = async (bookId: string) => {
         let fine = 0;
         const today = new Date();
         const dueDate = new Date(itemToReturn.dueDate);
-        const daysOverdue = differenceInDays(today, dueDate);
 
-        if (daysOverdue > 0) {
+        // Only calculate fine if the book is overdue
+        if (today > dueDate) {
+            const daysOverdue = differenceInDays(today, dueDate);
             fine = daysOverdue * 10; // 10 INR per day
         }
 
@@ -336,7 +337,7 @@ const returnBook = async (bookId: string) => {
         
         toast({
           title: `Book "${bookToReturn.title}" Returned`,
-            description: fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!',
+            description: fine > 0 ? `A fine of ₹${fine} has been added for ${differenceInDays(today, dueDate)} overdue day(s).` : 'Returned on time!',
         });
 
     } catch (error: any) {
@@ -486,5 +487,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    
