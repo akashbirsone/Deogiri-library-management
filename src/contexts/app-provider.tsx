@@ -256,7 +256,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const bookDocRef = doc(firestore, bookToBorrow.path);
 
     const today = new Date();
-    const dueDate = add(today, { days: 14 });
+    const dueDate = add(today, { days: 15 });
 
     const newBorrowItem: BorrowHistoryItem = {
         bookId: bookToBorrow.id,
