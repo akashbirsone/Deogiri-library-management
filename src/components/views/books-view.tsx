@@ -28,6 +28,7 @@ import {
   Loader2,
   BookOpenCheck,
   MoreVertical,
+  Search,
 } from "lucide-react";
 import {
   Dialog,
@@ -67,6 +68,7 @@ export function BooksView() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<BookType | null>(null);
   const [formSubject, setFormSubject] = React.useState<string>("");
+  const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
   
   const selectedDepartment = React.useMemo(() => departments.find((d) => d.id === selectedDeptId), [selectedDeptId]);
@@ -97,9 +99,14 @@ export function BooksView() {
       const deptMatch = !selectedDeptId || book.department === selectedDeptId;
       const courseMatch = !selectedCourseId || book.course === selectedCourseId;
       const semMatch = !selectedSemesterId || book.semester === selectedSemesterId;
-      return deptMatch && courseMatch && semMatch;
+      
+      const searchMatch = searchTerm.trim() === "" ||
+        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return deptMatch && courseMatch && semMatch && searchMatch;
     });
-  }, [allBooks, selectedDeptId, selectedCourseId, selectedSemesterId]);
+  }, [allBooks, selectedDeptId, selectedCourseId, selectedSemesterId, searchTerm]);
 
 
   const handleFormSubmit = async (bookData: Partial<BookType>) => {
@@ -241,6 +248,20 @@ export function BooksView() {
               </Select>
             </div>
           </div>
+           {selectedSemester && (
+            <>
+              <Separator className="my-4" />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by book title or author..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -250,6 +271,11 @@ export function BooksView() {
             const subjectBooks = booksForSelectedFilters.filter(
               (book) => book.subject === subject.name
             );
+            
+            if (searchTerm && subjectBooks.length === 0) {
+                return null;
+            }
+
             return (
               <Card key={subject.name} className="flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between">
