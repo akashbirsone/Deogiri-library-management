@@ -79,9 +79,7 @@ export function UsersView() {
                             <TableRow>
                                 <TableHead>User</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                <span className="sr-only">Actions</span>
-                                </TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -104,7 +102,7 @@ export function UsersView() {
                                     <TableCell>
                                         <Badge variant="outline">{user.role}</Badge>
                                     </TableCell>
-                                    <TableCell className="hidden md:table-cell">
+                                    <TableCell className="text-right">
                                         {canManageUser(user) && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -189,5 +187,3 @@ const UserForm = ({ user, onSubmit, onClose }: { user: User; onSubmit: (data: Us
         </DialogContent>
     );
 };
-
-    
