@@ -54,6 +54,7 @@ export function BooksView() {
     updateBook,
     deleteBook,
     seedDatabase,
+    restoreBook,
   } = useApp();
 
   const isStudent = user?.role === 'student';
@@ -92,12 +93,12 @@ export function BooksView() {
   }
   
   const booksForSelectedFilters = React.useMemo(() => {
-    if (!selectedSemesterId) return [];
-    return allBooks.filter(book => 
-      book.department === selectedDeptId &&
-      book.course === selectedCourseId &&
-      book.semester === selectedSemesterId
-    );
+    return allBooks.filter(book => {
+      const deptMatch = !selectedDeptId || book.department === selectedDeptId;
+      const courseMatch = !selectedCourseId || book.course === selectedCourseId;
+      const semMatch = !selectedSemesterId || book.semester === selectedSemesterId;
+      return deptMatch && courseMatch && semMatch;
+    });
   }, [allBooks, selectedDeptId, selectedCourseId, selectedSemesterId]);
 
 
@@ -152,8 +153,16 @@ export function BooksView() {
   };
   
   const handleDeleteBook = async (book: BookType) => {
-      await deleteBook(book.path);
-      toast({ title: "Book Deleted", variant: "destructive" });
+    await deleteBook(book.path);
+    toast({
+      title: 'Book Deleted',
+      description: `${book.title} has been removed.`,
+      action: (
+        <Button variant="secondary" size="sm" onClick={() => restoreBook(book.path, book)}>
+          Undo
+        </Button>
+      ),
+    });
   }
 
   const openAddBookForm = (subject: string) => {

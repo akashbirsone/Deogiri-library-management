@@ -42,6 +42,7 @@ interface AppContextType {
   addBook: (path: string, book: Omit<Book, 'id' | 'path'>) => Promise<void>;
   updateBook: (path: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (path: string) => Promise<void>;
+  restoreBook: (path: string, book: Omit<Book, 'id' | 'path'>) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   seedDatabase: (deptId: string, courseId: string, semId: string) => Promise<void>;
@@ -378,6 +379,17 @@ const returnBook = async (bookId: string) => {
         });
     };
 
+    const restoreBook = async (path: string, book: Omit<Book, 'id' | 'path'>) => {
+        if (!firestore) return;
+        const bookDocRef = doc(firestore, path);
+        // We remove 'id' and 'path' from the book object before saving
+        const { id, path: bookPath, ...bookData } = book as Book;
+        setDoc(bookDocRef, bookData).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'create', requestResourceData: bookData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
     const updateUser = async (userToUpdate: User) => {
         if (!firestore) return;
         const userDoc = doc(firestore, 'users', userToUpdate.uid);
@@ -471,6 +483,7 @@ const returnBook = async (bookId: string) => {
         addBook,
         updateBook,
         deleteBook,
+        restoreBook,
         updateUser,
         deleteUser,
         seedDatabase,
@@ -487,3 +500,4 @@ export const useApp = () => {
   }
   return context;
 };
+
