@@ -26,7 +26,6 @@ import {
   PlusCircle,
   Trash,
   Edit,
-  Loader2,
   BookOpenCheck,
   MoreVertical,
   Search,
@@ -44,8 +43,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { departments } from "@/lib/departments";
 import { Switch } from "@/components/ui/switch";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 
 export function BooksView() {
   const {
@@ -173,6 +171,14 @@ export function BooksView() {
     });
   }
 
+  const toggleAvailability = (book: BookType) => {
+    updateBook(book.path, { isAvailable: !book.isAvailable });
+    toast({
+        title: "Availability Updated",
+        description: `${book.title} is now ${!book.isAvailable ? 'Available' : 'Unavailable'}.`
+    });
+  }
+
   const openAddBookForm = (subject: string) => {
     setEditingBook(null);
     setFormSubject(subject);
@@ -182,6 +188,51 @@ export function BooksView() {
   const isAdmin = user?.role === 'admin' || user?.role === 'librarian';
   
   const isSearchActive = searchTerm.trim() !== "";
+
+  const renderBookActions = (book: BookType) => {
+    if (!isAdmin) {
+      return (
+        <Button size="sm" disabled={!book.isAvailable} onClick={() => borrowBook(book.id)}>
+          Borrow
+        </Button>
+      );
+    }
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
+            <span className="sr-only">Book Actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel className="truncate font-normal">
+            <p className="font-semibold text-sm">{book.title}</p>
+            <p className="text-xs text-muted-foreground break-all">{book.coverImage}</p>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center justify-between">
+            <Label htmlFor={`available-toggle-${book.id}`} className="font-normal cursor-pointer">Available</Label>
+            <Switch
+              id={`available-toggle-${book.id}`}
+              checked={book.isAvailable}
+              onCheckedChange={() => toggleAvailability(book)}
+            />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <div className="p-1 grid grid-cols-2 gap-1">
+             <Button variant="outline" size="sm" onClick={() => handleEditBook(book)}>
+                <Edit className="mr-2 h-3 w-3"/> Edit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => handleDeleteBook(book)}>
+                <Trash className="mr-2 h-3 w-3"/> Delete
+            </Button>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -294,31 +345,7 @@ export function BooksView() {
                                       </Badge>
                                   </div>
                                   <div className="ml-auto">
-                                      {isAdmin ? (
-                                          <DropdownMenu>
-                                              <DropdownMenuTrigger asChild>
-                                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                      <MoreVertical className="h-4 w-4" />
-                                                  </Button>
-                                              </DropdownMenuTrigger>
-                                              <DropdownMenuContent align="end">
-                                                  <DropdownMenuItem onClick={() => handleEditBook(book)}>
-                                                      <Edit className="mr-2 h-4 w-4" /> Edit
-                                                  </DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
-                                                      <Trash className="mr-2 h-4 w-4" /> Delete
-                                                  </DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                          </DropdownMenu>
-                                      ) : (
-                                          <Button
-                                            size="sm"
-                                            disabled={!book.isAvailable}
-                                            onClick={() => borrowBook(book.id)}
-                                          >
-                                            Borrow
-                                          </Button>
-                                      )}
+                                      {renderBookActions(book)}
                                   </div>
                               </div>
                           ))}
@@ -374,31 +401,7 @@ export function BooksView() {
                                 </Badge>
                             </div>
                             <div className="ml-auto">
-                                {isAdmin ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEditBook(book)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
-                                                <Trash className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : (
-                                    <Button
-                                      size="sm"
-                                      disabled={!book.isAvailable}
-                                      onClick={() => borrowBook(book.id)}
-                                    >
-                                      Borrow
-                                    </Button>
-                                )}
+                                {renderBookActions(book)}
                             </div>
                         </div>
                       ))}
