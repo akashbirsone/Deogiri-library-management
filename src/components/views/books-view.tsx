@@ -188,7 +188,7 @@ export function BooksView() {
         </h1>
       </div>
       <Card>
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="department-select">Department</Label>
@@ -248,110 +248,107 @@ export function BooksView() {
               </Select>
             </div>
           </div>
-           {selectedSemester && (
-            <>
-              <Separator className="my-4" />
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by book title or author..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
 
       {selectedSemester && (
-         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {selectedSemester.subjects.map((subject) => {
-            const subjectBooks = booksForSelectedFilters.filter(
-              (book) => book.subject === subject.name
-            );
-            
-            if (searchTerm && subjectBooks.length === 0) {
-                return null;
-            }
+        <>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by book title or author..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {selectedSemester.subjects.map((subject) => {
+              const subjectBooks = booksForSelectedFilters.filter(
+                (book) => book.subject === subject.name
+              );
+              
+              if (searchTerm && subjectBooks.length === 0) {
+                  return null;
+              }
 
-            return (
-              <Card key={subject.name} className="flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="font-headline text-xl">{subject.name}</CardTitle>
-                  {isAdmin && (
-                    <Button variant="outline" size="sm" onClick={() => openAddBookForm(subject.name)}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Book
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  {subjectBooks.length > 0 ? (
-                    <div className="space-y-4">
-                      {subjectBooks.map((book) => (
-                        <div key={book.id} className="flex items-center gap-4">
-                            <div className="relative w-16 h-20 rounded-md overflow-hidden flex-shrink-0">
-                                <Image 
-                                    src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
-                                    alt={book.title}
-                                    fill
-                                    className="object-cover"
-                                    data-ai-hint={book.coverImageHint}
-                                />
-                            </div>
-                            <div className="flex-grow">
-                                <p className="font-semibold leading-tight">{book.title}</p>
-                                <p className="text-sm text-muted-foreground">by {book.author}</p>
-                                <Badge variant={book.isAvailable ? "secondary" : "destructive"} className="mt-1">
-                                    {book.isAvailable ? "Available" : "Unavailable"}
-                                </Badge>
-                            </div>
-                            <div className="ml-auto">
-                                {isAdmin ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEditBook(book)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
-                                                <Trash className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : (
-                                    <Button
-                                      size="sm"
-                                      disabled={!book.isAvailable}
-                                      onClick={() => borrowBook(book.id)}
-                                    >
-                                      Borrow
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
-                      <BookOpenCheck className="mx-auto h-12 w-12" />
-                      <p className="mt-4">No books found for this subject.</p>
-                      {isAdmin && (
-                        <p className="text-xs mt-2">Click 'Add Book' to get started.</p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+              return (
+                <Card key={subject.name} className="flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="font-headline text-xl">{subject.name}</CardTitle>
+                    {isAdmin && (
+                      <Button variant="outline" size="sm" onClick={() => openAddBookForm(subject.name)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Book
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    {subjectBooks.length > 0 ? (
+                      <div className="space-y-4">
+                        {subjectBooks.map((book) => (
+                          <div key={book.id} className="flex items-center gap-4">
+                              <div className="relative w-16 h-20 rounded-md overflow-hidden flex-shrink-0">
+                                  <Image 
+                                      src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
+                                      alt={book.title}
+                                      fill
+                                      className="object-cover"
+                                      data-ai-hint={book.coverImageHint}
+                                  />
+                              </div>
+                              <div className="flex-grow">
+                                  <p className="font-semibold leading-tight">{book.title}</p>
+                                  <p className="text-sm text-muted-foreground">by {book.author}</p>
+                                  <Badge variant={book.isAvailable ? "secondary" : "destructive"} className="mt-1">
+                                      {book.isAvailable ? "Available" : "Unavailable"}
+                                  </Badge>
+                              </div>
+                              <div className="ml-auto">
+                                  {isAdmin ? (
+                                      <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                  <MoreVertical className="h-4 w-4" />
+                                              </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onClick={() => handleEditBook(book)}>
+                                                  <Edit className="mr-2 h-4 w-4" /> Edit
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
+                                                  <Trash className="mr-2 h-4 w-4" /> Delete
+                                              </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                      </DropdownMenu>
+                                  ) : (
+                                      <Button
+                                        size="sm"
+                                        disabled={!book.isAvailable}
+                                        onClick={() => borrowBook(book.id)}
+                                      >
+                                        Borrow
+                                      </Button>
+                                  )}
+                              </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                        <BookOpenCheck className="mx-auto h-12 w-12" />
+                        <p className="mt-4">No books found for this subject.</p>
+                        {isAdmin && (
+                          <p className="text-xs mt-2">Click 'Add Book' to get started.</p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -479,5 +476,3 @@ const BookForm = ({
     </DialogContent>
   );
 };  
-
-    
