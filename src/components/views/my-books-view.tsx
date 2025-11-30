@@ -78,7 +78,7 @@ export function MyBooksView() {
                                         </div>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button size="sm" className="w-full" onClick={() => returnBook(book.id)}>
+                                        <Button size="sm" className="w-full" onClick={() => returnBook(book.id, user.uid)}>
                                             <RefreshCw className="mr-2 h-4 w-4" />
                                             Return Book
                                         </Button>
@@ -126,7 +126,7 @@ export function MyBooksView() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button size="sm" onClick={() => returnBook(book.id)}>
+                                                <Button size="sm" onClick={() => returnBook(book.id, user.uid)}>
                                                     <RefreshCw className="mr-2 h-4 w-4" />
                                                     Return Book
                                                 </Button>
@@ -144,5 +144,3 @@ export function MyBooksView() {
         </div>
     )
 }
-
-    

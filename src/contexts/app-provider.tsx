@@ -38,11 +38,11 @@ interface AppContextType {
   emailLogin: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   borrowBook: (bookId: string) => Promise<void>;
-  returnBook: (bookId: string) => Promise<void>;
+  returnBook: (bookId: string, studentId?: string) => Promise<void>;
   addBook: (path: string, book: Omit<Book, 'id' | 'path'>) => Promise<void>;
   updateBook: (path: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (path: string) => Promise<void>;
-  restoreBook: (path: string, book: Omit<Book, 'id' | 'path'>) => Promise<void>;
+  restoreBook: (path: string, book: Book) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   seedDatabase: (deptId: string, courseId: string, semId: string) => Promise<void>;
@@ -290,14 +290,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 };
 
 
-const returnBook = async (bookId: string) => {
-    if (!user || user.role !== 'student' || !firestore) return;
+const returnBook = async (bookId: string, studentId?: string) => {
+    if (!user || !firestore) return;
 
-    const studentProfile = user as Student;
-    const itemToReturn = (studentProfile.borrowHistory || []).find(item => item.bookId === bookId && !item.returnDate);
+    // If studentId is not provided, it means the user is returning their own book.
+    const targetStudentId = studentId || user.uid;
+
+    const studentToUpdate = users.find(u => u.uid === targetStudentId && u.role === 'student') as Student | undefined;
+
+    if (!studentToUpdate) {
+        toast({ variant: "destructive", title: "Error", description: "Student not found." });
+        return;
+    }
+
+    const itemToReturn = (studentToUpdate.borrowHistory || []).find(item => item.bookId === bookId && !item.returnDate);
 
     if (!itemToReturn) {
-        toast({ variant: "destructive", title: "Error", description: "Cannot find this book in your borrowed list." });
+        toast({ variant: "destructive", title: "Error", description: "Cannot find this book in the student's borrowed list." });
         return;
     }
     
@@ -314,22 +323,21 @@ const returnBook = async (bookId: string) => {
         const today = new Date();
         const dueDate = new Date(itemToReturn.dueDate);
 
-        // Only calculate fine if the book is overdue
         if (today > dueDate) {
             const daysOverdue = differenceInDays(today, dueDate);
-            fine = daysOverdue * 10; // 10 INR per day
+            fine = daysOverdue * 10;
         }
 
-        const updatedHistory = (studentProfile.borrowHistory || []).map(item =>
+        const updatedHistory = (studentToUpdate.borrowHistory || []).map(item =>
             (item.bookId === bookId && !item.returnDate)
                 ? { ...item, returnDate: formatISO(today), fine: fine }
                 : item
         );
 
-        const totalFines = (studentProfile.fines || 0) + fine;
+        const totalFines = (studentToUpdate.fines || 0) + fine;
 
         const batch = writeBatch(firestore);
-        const userDocRef = doc(firestore, "users", studentProfile.uid);
+        const userDocRef = doc(firestore, "users", targetStudentId);
 
         batch.update(bookDocRef, { isAvailable: true });
         batch.update(userDocRef, { borrowHistory: updatedHistory, fines: totalFines });
@@ -338,7 +346,7 @@ const returnBook = async (bookId: string) => {
         
         toast({
           title: `Book "${bookToReturn.title}" Returned`,
-            description: fine > 0 ? `A fine of ₹${fine} has been added for ${differenceInDays(today, dueDate)} overdue day(s).` : 'Returned on time!',
+          description: `By ${studentToUpdate.name}. ${fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!'}`,
         });
 
     } catch (error: any) {
@@ -379,11 +387,11 @@ const returnBook = async (bookId: string) => {
         });
     };
 
-    const restoreBook = async (path: string, book: Omit<Book, 'id' | 'path'>) => {
+    const restoreBook = async (path: string, book: Book) => {
         if (!firestore) return;
         const bookDocRef = doc(firestore, path);
         // We remove 'id' and 'path' from the book object before saving
-        const { id, path: bookPath, ...bookData } = book as Book;
+        const { id, path: bookPath, ...bookData } = book;
         setDoc(bookDocRef, bookData).catch(async (error) => {
             const permissionError = new FirestorePermissionError({ path: path, operation: 'create', requestResourceData: bookData });
             errorEmitter.emit('permission-error', permissionError);
@@ -500,4 +508,3 @@ export const useApp = () => {
   }
   return context;
 };
-
