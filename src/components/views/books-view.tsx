@@ -179,6 +179,8 @@ export function BooksView() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'librarian';
+  
+  const isSearchActive = searchTerm.trim() !== "";
 
   return (
     <div className="flex flex-col gap-6">
@@ -259,17 +261,84 @@ export function BooksView() {
           </div>
         </CardContent>
       </Card>
+      
+      {isSearchActive && (
+          <Card>
+              <CardHeader>
+                  <CardTitle>Search Results</CardTitle>
+                  <CardDescription>
+                      Showing {booksForSelectedFilters.length} result(s) for &quot;{searchTerm}&quot;
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {booksForSelectedFilters.length > 0 ? (
+                      <div className="space-y-4">
+                          {booksForSelectedFilters.map((book) => (
+                              <div key={book.id} className="flex items-center gap-4">
+                                  <div className="relative w-16 h-20 rounded-md overflow-hidden flex-shrink-0">
+                                      <Image 
+                                          src={book.coverImage || `https://picsum.photos/seed/${encodeURIComponent(book.subject)}/300/450`}
+                                          alt={book.title}
+                                          fill
+                                          className="object-cover"
+                                          data-ai-hint={book.coverImageHint}
+                                      />
+                                  </div>
+                                  <div className="flex-grow">
+                                      <p className="font-semibold leading-tight">{book.title}</p>
+                                      <p className="text-sm text-muted-foreground">by {book.author}</p>
+                                      <p className="text-xs text-muted-foreground mt-1">Subject: {book.subject}</p>
+                                      <Badge variant={book.isAvailable ? "secondary" : "destructive"} className="mt-1">
+                                          {book.isAvailable ? "Available" : "Unavailable"}
+                                      </Badge>
+                                  </div>
+                                  <div className="ml-auto">
+                                      {isAdmin ? (
+                                          <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                      <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem onClick={() => handleEditBook(book)}>
+                                                      <Edit className="mr-2 h-4 w-4" /> Edit
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleDeleteBook(book)} className="text-destructive">
+                                                      <Trash className="mr-2 h-4 w-4" /> Delete
+                                                  </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                          </DropdownMenu>
+                                      ) : (
+                                          <Button
+                                            size="sm"
+                                            disabled={!book.isAvailable}
+                                            onClick={() => borrowBook(book.id)}
+                                          >
+                                            Borrow
+                                          </Button>
+                                      )}
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  ) : (
+                      <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                          <BookOpenCheck className="mx-auto h-12 w-12" />
+                          <p className="mt-4">No books found matching your search.</p>
+                      </div>
+                  )}
+              </CardContent>
+          </Card>
+      )}
 
-      {selectedSemester && (
+
+      {selectedSemester && !isSearchActive && (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {selectedSemester.subjects.map((subject) => {
             const subjectBooks = booksForSelectedFilters.filter(
               (book) => book.subject === subject.name
             );
-            
-            if (searchTerm && subjectBooks.length === 0) {
-                return null;
-            }
 
             return (
               <Card key={subject.name} className="flex flex-col">
@@ -473,4 +542,6 @@ const BookForm = ({
       </form>
     </DialogContent>
   );
-};  
+};
+
+    
