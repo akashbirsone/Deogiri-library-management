@@ -155,10 +155,12 @@ export function SettingsView() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <div>
-                        <Label>Membership Status</Label>
-                        <div><Badge variant="secondary">Active</Badge></div>
-                     </div>
+                    {isStudent && (
+                        <div>
+                            <Label>Student Status</Label>
+                            <div><Badge variant="secondary">Active</Badge></div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
