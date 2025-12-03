@@ -9,14 +9,11 @@ import { Label } from "@/components/ui/label";
 import { useApp } from "@/contexts/app-provider";
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithGithub, emailLogin, sendPasswordReset } = useApp();
+  const { signInWithGoogle, signInWithGithub, emailLogin } = useApp();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [resetEmail, setResetEmail] = React.useState('');
-  const [isResetDialogOpen, setIsResetDialogOpen] = React.useState(false);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,6 +60,11 @@ export default function LoginPage() {
       await signInWithGoogle();
     } catch (error) {
       console.error("Popup sign-in error", error);
+      toast({
+        variant: "destructive",
+        title: "Sign-in Failed",
+        description: "Could not sign in with Google. Please try again."
+      })
     }
   };
 
@@ -71,35 +73,13 @@ export default function LoginPage() {
       await signInWithGithub();
     } catch (error) {
       console.error("Popup sign-in error", error);
+       toast({
+        variant: "destructive",
+        title: "Sign-in Failed",
+        description: "Could not sign in with GitHub. Please try again."
+      })
     }
   };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetEmail) {
-        toast({
-            variant: "destructive",
-            title: "Email Required",
-            description: "Please enter your email address.",
-        });
-        return;
-    }
-    try {
-        await sendPasswordReset(resetEmail);
-        setIsResetDialogOpen(false);
-        setResetEmail('');
-        toast({
-            title: "Password Reset Email Sent",
-            description: "Please check your inbox for instructions to reset your password.",
-        });
-    } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to send password reset email. Please check the email address and try again.",
-        });
-    }
-  }
 
   return (
     <div className="flex items-center justify-center min-h-svh bg-muted/50 p-4">
@@ -128,9 +108,6 @@ export default function LoginPage() {
               <div className="grid gap-2">
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
-                    <Button variant="link" type="button" className="ml-auto inline-block text-sm underline h-auto p-0" onClick={() => setIsResetDialogOpen(true)}>
-                        Forgot your password?
-                    </Button>
                   </div>
                 <Input 
                   id="password" 
@@ -169,37 +146,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-            <form onSubmit={handlePasswordReset}>
-                <DialogHeader>
-                    <DialogTitle>Forgot Password</DialogTitle>
-                    <DialogDescription>
-                        Enter your email address and we will send you a link to reset your password.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="reset-email">Email</Label>
-                        <Input
-                        id="reset-email"
-                        type="email"
-                        placeholder="m@example.com"
-                        required
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button type="button" variant="secondary" onClick={() => setIsResetDialogOpen(false)}>Cancel</Button>
-                    <Button type="submit">Send Reset Link</Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
-
     
