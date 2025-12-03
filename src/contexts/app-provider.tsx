@@ -183,7 +183,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        toast({
+            variant: "destructive",
+            title: "Email already in use.",
+            description: "An account with this email already exists. Please sign in with the method you originally used.",
+        });
+      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         console.error("Google Sign-In Failed:", error);
         toast({ variant: "destructive", title: "Google Sign-In Failed", description: error.message });
       }
@@ -196,7 +202,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        toast({
+            variant: "destructive",
+            title: "Email already in use.",
+            description: "An account with this email already exists. Please sign in with the method you originally used.",
+        });
+      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         console.error("GitHub Sign-In Failed:", error);
         toast({ variant: "destructive", title: "GitHub Sign-In Failed", description: error.message });
       }
