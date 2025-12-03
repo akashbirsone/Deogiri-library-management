@@ -309,7 +309,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
 
+ 
   const returnBook = async (bookId: string, studentId?: string) => {
+ 
+const returnBook = async (bookId: string, studentId?: string) => {
+ 
     if (!user || !firestore) return;
 
     // If studentId is not provided, it means the user is returning their own book.
@@ -320,13 +324,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!studentToUpdate) {
       toast({ variant: "destructive", title: "Error", description: "Student not found." });
       return;
+ 
+        toast({ variant: "destructive", title: "Error", description: "Student not found." });
+        return;
     }
 
     const itemToReturn = (studentToUpdate.borrowHistory || []).find(item => item.bookId === bookId && !item.returnDate);
 
     if (!itemToReturn) {
+ 
       toast({ variant: "destructive", title: "Error", description: "Cannot find this book in the student's borrowed list." });
       return;
+ 
+        toast({ variant: "destructive", title: "Error", description: "Cannot find this book in the student's borrowed list." });
+        return;
+ 
     }
 
     const bookToReturn = books.find(b => b.id === bookId);
@@ -342,6 +354,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const today = new Date();
       const dueDate = new Date(itemToReturn.dueDate);
 
+ 
       if (today > dueDate) {
         const daysOverdue = differenceInDays(today, dueDate);
         fine = daysOverdue * 10;
@@ -358,15 +371,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const batch = writeBatch(firestore);
       const userDocRef = doc(firestore, "users", targetStudentId);
 
+        if (today > dueDate) {
+            const daysOverdue = differenceInDays(today, dueDate);
+            fine = daysOverdue * 10;
+        }
+
+        const updatedHistory = (studentToUpdate.borrowHistory || []).map(item =>
+            (item.bookId === bookId && !item.returnDate)
+                ? { ...item, returnDate: formatISO(today), fine: fine }
+                : item
+        );
+
+        const totalFines = (studentToUpdate.fines || 0) + fine;
+
+        const batch = writeBatch(firestore);
+        const userDocRef = doc(firestore, "users", targetStudentId);
+ 
+
       batch.update(bookDocRef, { isAvailable: true });
       batch.update(userDocRef, { borrowHistory: updatedHistory, fines: totalFines });
 
-      await batch.commit();
-
-      toast({
-        title: `Book "${bookToReturn.title}" Returned`,
-        description: `By ${studentToUpdate.name}. ${fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!'}`,
-      });
+        await batch.commit();
+        
+        toast({
+          title: `Book "${bookToReturn.title}" Returned`,
+          description: `By ${studentToUpdate.name}. ${fine > 0 ? `A fine of ₹${fine} has been added.` : 'Returned on time!'}`,
+        });
 
     } catch (error: any) {
       const permissionError = new FirestorePermissionError({
@@ -488,9 +518,108 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           title: "Seeding Failed",
           description: "Could not add dummy books to the database.",
         });
+ 
       }
     }
   }, [firestore, user, toast]);
+ 
+    };
+
+    const deleteBook = async (path: string) => {
+        if (!firestore) return;
+        const bookDoc = doc(firestore, path);
+        deleteDoc(bookDoc).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const restoreBook = async (path: string, book: Book) => {
+        if (!firestore) return;
+        const bookDocRef = doc(firestore, path);
+        // We remove 'id' and 'path' from the book object before saving
+        const { id, path: bookPath, ...bookData } = book;
+        setDoc(bookDocRef, bookData).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: path, operation: 'create', requestResourceData: bookData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const updateUser = async (userToUpdate: User) => {
+        if (!firestore) return;
+        const userDoc = doc(firestore, 'users', userToUpdate.uid);
+        setDoc(userDoc, userToUpdate, { merge: true }).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: userDoc.path, operation: 'update', requestResourceData: userToUpdate });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const deleteUser = async (userId: string) => {
+        if (!firestore) return;
+        const userDoc = doc(firestore, 'users', userId);
+        deleteDoc(userDoc).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({ path: userDoc.path, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    };
+
+    const seedDatabase = useCallback(async (deptId: string, courseId: string, semId: string) => {
+        if (!firestore || !user || (user.role !== 'admin' && user.role !== 'librarian')) return;
+
+        const department = departments.find(d => d.id === deptId);
+        const course = department?.courses.find(c => c.id === courseId);
+        const semester = course?.semesters.find(s => s.id === semId);
+
+        if (!semester) return;
+
+        const batch = writeBatch(firestore);
+        let booksAddedCount = 0;
+
+        for (const subject of semester.subjects) {
+            const booksPath = `departments/${deptId}/courses/${courseId}/semesters/${semId}/subjects/${subject.name}/books`;
+            const booksCollectionRef = collection(firestore, booksPath);
+            
+            const q = query(booksCollectionRef, limit(1));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                const newBook: Omit<Book, 'id' | 'path'> = {
+                    title: subject.name,
+                    author: "Auto-Generated",
+                    subject: subject.name,
+                    isAvailable: true,
+                    coverImage: subject.coverImage || `https://picsum.photos/seed/${encodeURIComponent(subject.name)}/300/450`,
+                    coverImageHint: subject.name,
+                    addedBy: "system-seed",
+                    addedDate: new Date().toISOString(),
+                    department: deptId,
+                    course: courseId,
+                    semester: semId,
+                };
+                const newBookRef = doc(booksCollectionRef);
+                batch.set(newBookRef, newBook);
+                booksAddedCount++;
+            }
+        }
+
+        if (booksAddedCount > 0) {
+            try {
+                await batch.commit();
+                toast({
+                    title: "Database Seeded",
+                    description: `${booksAddedCount} dummy book(s) have been added.`,
+                });
+            } catch (error) {
+                console.error("Error seeding database:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Seeding Failed",
+                    description: "Could not add dummy books to the database.",
+                });
+            }
+        }
+    }, [firestore, user, toast]);
+ 
 
   return (
     <AppContext.Provider value={{
