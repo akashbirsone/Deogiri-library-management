@@ -12,6 +12,7 @@ import {
   GithubAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   Auth,
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, Firestore, setDoc, serverTimestamp, collection, onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch, query, getDocs, collectionGroup, where, limit } from "firebase/firestore";
@@ -36,6 +37,7 @@ interface AppContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
   emailLogin: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   borrowBook: (bookId: string) => Promise<void>;
   returnBook: (bookId: string, studentId?: string) => Promise<void>;
@@ -208,6 +210,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
         throw error;
     }
+  }
+
+  const sendPasswordReset = async (email: string) => {
+    if (!auth) throw new Error("Firebase Auth not initialized");
+    await sendPasswordResetEmail(auth, email);
   }
 
   const logout = async () => {
@@ -485,6 +492,7 @@ const returnBook = async (bookId: string, studentId?: string) => {
         signInWithGoogle,
         signInWithGithub,
         emailLogin,
+        sendPasswordReset,
         logout,
         borrowBook,
         returnBook,
@@ -508,3 +516,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    
