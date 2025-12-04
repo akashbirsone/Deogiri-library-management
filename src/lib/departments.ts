@@ -43,7 +43,7 @@ export const departments: Department[] = [
   },
   {
     id: "bsc-it-cs",
-    name: "B.Sc IT / CS",
+    name: " Faculty of Science B.Sc IT / CS",
     courses: [
       {
         id: "bsc-it",
