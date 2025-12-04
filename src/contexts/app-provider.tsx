@@ -498,14 +498,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       authUser,
       loading: authLoading,
       firestore,
-      books: (user?.role === 'student' && user.department) 
-        ? books.filter(b => 
-            // Rule 1: Book General honi chahiye
-            b.department === "General / All Departments" || 
-            // Rule 2: Ya fir Department match hona chahiye
-            b.department === user.department
-          ) 
-        : books,
+      books,
       users,
       signInWithGoogle,
       signInWithGithub,
