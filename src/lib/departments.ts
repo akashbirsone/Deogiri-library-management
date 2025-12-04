@@ -1,4 +1,3 @@
-
 export interface Subject {
   name: string;
   coverImage: string;
@@ -43,7 +42,7 @@ export const departments: Department[] = [
   },
   {
     id: "bsc-it-cs",
-    name: " B.Sc IT / CS",
+    name: "B.Sc IT / CS",
     courses: [
       {
         id: "bsc-it",
@@ -87,7 +86,7 @@ export const departments: Department[] = [
             subjects: [
               { name: "Python Programming", coverImage: "https://m.media-amazon.com/images/I/61ViPUXS8ZL._UF1000,1000_QL80_.jpg"},
               { name: "Computer Architecture", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdtdHZQBteyw9RqGGtfKR6d-Q5VFmAV0RAtQ&s" },
-              { name: "Web Technologies-II (React, Node.js)", coverImage: "https://m.media-amazon.com/images/I/81SMVOOWMLL._UF350,350_QL50_.jpg" },
+              { name: "Web Technologies-II (React, Node.js)", coverImage: "https://m.media-amazon.com/images/I/81SMVOOWMLL.UF350,350_QL50.jpg" },
               { name: "Data Communication", coverImage: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1347319715i/122060.jpg" },
             ],
           },
@@ -128,8 +127,8 @@ export const departments: Department[] = [
             name: "Semester 1",
             subjects: [
               { name: "Principles of Management", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4WgmIPX2s3u4tbE9u4lrFrYpq0xSAQ-jJTQ&s" },
-              { name: "Business Communication", coverImage: "https://m.media-amazon.com/images/I/81PTPG5atfL._UF1000,1000_QL80_.jpg" },
-              { name: "Business Economics", coverImage: "https://m.media-amazon.com/images/I/81HFt6Lo0AL._UF1000,1000_QL80_.jpg" },
+              { name: "Business Communication", coverImage: "https://m.media-amazon.com/images/I/81PTPG5atfL.UF1000,1000_QL80.jpg" },
+              { name: "Business Economics", coverImage: "https://m.media-amazon.com/images/I/81HFt6Lo0AL.UF1000,1000_QL80.jpg" },
               { name: "Financial Accounting", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz7GEuj1NvZMJW6gzlTkfSz9pSbLejc_iWGw&s" },
               { name: "Business Mathematics", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyO3QlgDT081zpo8g98yWXMn2JEhRDizGPPw&s" },
             ],
@@ -138,11 +137,11 @@ export const departments: Department[] = [
             id: "sem2",
             name: "Semester 2",
             subjects: [
-              { name: "Marketing Management", coverImage: "https://m.media-amazon.com/images/I/31RYsdZrLyL._UF1000,1000_QL80_.jpg" },
-              { name: "Business Law", coverImage: "https://m.media-amazon.com/images/I/91NtWHzWWVL._UF1000,1000_QL80_.jpg" },
+              { name: "Marketing Management", coverImage: "https://m.media-amazon.com/images/I/31RYsdZrLyL.UF1000,1000_QL80.jpg" },
+              { name: "Business Law", coverImage: "https://m.media-amazon.com/images/I/91NtWHzWWVL.UF1000,1000_QL80.jpg" },
               { name: "Cost Accounting", coverImage: "https://m.media-amazon.com/images/I/A1CQtCkYT3L.jpg" },
               { name: "Computer Applications", coverImage: "https://m.media-amazon.com/images/I/81CCHS5X88L.jpg" },
-              { name: "Environmental Studies", coverImage: "https://m.media-amazon.com/images/I/616879jQ0bL._UF1000,1000_QL80_.jpg" },
+              { name: "Environmental Studies", coverImage: "https://m.media-amazon.com/images/I/616879jQ0bL.UF1000,1000_QL80.jpg" },
             ],
           },
           {
@@ -152,7 +151,7 @@ export const departments: Department[] = [
               { name: "Human Resource Management", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJVnMFhEe2Py-aXqx971BR-VYBjkqW4imXBg&s" },
               { name: "Organizational Behavior", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRr2SSxTvUoGUJsIjY9YVFtnH-OkWaHVumosQ&s" },
               { name: "Business Statistics", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSotMcto6odZE6EexVGAgoOVklm0-Ul9ZVSgQ&s" },
-              { name: "Financial Management", coverImage: "https://m.media-amazon.com/images/I/618uJ+81VNL._UF1000,1000_QL80_.jpg" },
+              { name: "Financial Management", coverImage: "https://m.media-amazon.com/images/I/618uJ+81VNL.UF1000,1000_QL80.jpg" },
               { name: "Entrepreneurship Development", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFuWYo3FRJlaV4a3EFwacw0wx9zIJpJDFclQ&s" },
             ],
           },
@@ -162,7 +161,7 @@ export const departments: Department[] = [
             subjects: [
               { name: "Production & Operations Management", coverImage: "https://m.media-amazon.com/images/I/61VETX9CinL.jpg" },
               { name: "Business Research Methods", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfvRlMrHTJf_igJDZ0LVYjb1pM4tRbjgfqAw&s" },
-              { name: "Management Information Systems", coverImage: "https://m.media-amazon.com/images/I/81-w3wQfp5L._UF1000,1000_QL80_.jpg" },
+              { name: "Management Information Systems", coverImage: "https://m.media-amazon.com/images/I/81-w3wQfp5L.UF1000,1000_QL80.jpg" },
               { name: "Advertising & Media Management", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRTlZO-52uMQMBfUKUzFfjUhuuLEHPv6QslWA&s" },
             ],
           },
@@ -170,10 +169,10 @@ export const departments: Department[] = [
             id: "sem5",
             name: "Semester 5",
             subjects: [
-              { name: "Strategic Management", coverImage: "https://m.media-amazon.com/images/I/51wEjthLVxL._UF1000,1000_QL80_.jpg" },
+              { name: "Strategic Management", coverImage: "https://m.media-amazon.com/images/I/51wEjthLVxL.UF1000,1000_QL80.jpg" },
               { name: "International Business", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEQ8mOxgtu-OTBxP7Fy5sGOZA4EciSZt9uDA&s" },
               { name: "Services Marketing", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR894ALfm3Iy28gSxP8au6Ht26Zook1qJYOw&s" },
-              { name: "E-Commerce", coverImage: "https://m.media-amazon.com/images/I/61zW7dht8aL._UF1000,1000_QL80_.jpg" },
+              { name: "E-Commerce", coverImage: "https://m.media-amazon.com/images/I/61zW7dht8aL.UF1000,1000_QL80.jpg" },
             ],
           },
           {
@@ -236,7 +235,7 @@ export const departments: Department[] = [
                 subjects: [
                     { name: "Auditing", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSdAA26hO99zBZUiExc-_K-crOQCJ4o0YQvcA&s" },
                     { name: "Indirect Tax", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnsLcwwKPc9WgQaFWmCvnae9OB2tXlurGS1g&s" },
-                    { name: "Financial Management", coverImage: "https://m.media-amazon.com/images/I/618uJ+81VNL._UF1000,1000_QL80_.jpg" },
+                    { name: "Financial Management", coverImage: "https://m.media-amazon.com/images/I/618uJ+81VNL.UF1000,1000_QL80.jpg" },
                 ],
             },
             {
@@ -245,7 +244,7 @@ export const departments: Department[] = [
                 subjects: [
                     { name: "Advanced Accounting", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTshB-vRXB2U_g4nxjsPuRis-bxU4pcyy4KKg&s" },
                     { name: "Income Tax-II", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRttPUYld3PMRXUMss0ZN8PDMDnzbfh_BpZ1w&s" },
-                    { name: "E-Commerce", coverImage: "https://m.media-amazon.com/images/I/81yFTG9EqBL._UF1000,1000_QL80_.jpg" },
+                    { name: "E-Commerce", coverImage: "https://m.media-amazon.com/images/I/81yFTG9EqBL.UF1000,1000_QL80.jpg" },
                     { name: "International Trade", coverImage: "https://media.springernature.com/full/springer-static/cover-hires/book/978-3-540-78265-0" },
                 ],
             },
@@ -256,7 +255,7 @@ export const departments: Department[] = [
                     { name: "Corporate Finance", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTh29a5s6wxqyAkPBWSyPAEAiRl3mKa1ZhozA&s" },
                     { name: "Investment Management", coverImage: "https://d1xcofdbxwssh7.cloudfront.net/live/supload/books/55253/processed/Screenshot2024-06-05at3.webp" },
                     { name: "Business Ethics", coverImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRaxG9wKjSGpf8jl8RMD_fZgtNH2wndQrjt_w&s" },
-                    { name: "Strategic Management", coverImage: "https://m.media-amazon.com/images/I/51wEjthLVxL._UF1000,1000_QL80_.jpg" },
+                    { name: "Strategic Management", coverImage: "https://m.media-amazon.com/images/I/51wEjthLVxL.UF1000,1000_QL80.jpg" },
                 ],
             },
         ],
@@ -275,66 +274,66 @@ export const departments: Department[] = [
                 id: "sem1",
                 name: "Semester 1",
                 subjects: [
-                    { name: "English Literature – I", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Political Science – I", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Sociology – I", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – I", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – I", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – I", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Political Science – I", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Sociology – I", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – I", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – I", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
             {
                 id: "sem2",
                 name: "Semester 2",
                 subjects: [
-                    { name: "English Literature – II", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Political Science – II", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Sociology – II", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – II", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – II", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – II", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Political Science – II", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Sociology – II", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – II", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – II", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
             {
                 id: "sem3",
                 name: "Semester 3",
                 subjects: [
-                    { name: "English Literature – III", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Political Science – III", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Sociology – III", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – III", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – III", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – III", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Political Science – III", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Sociology – III", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – III", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – III", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
             {
                 id: "sem4",
                 name: "Semester 4",
                 subjects: [
-                    { name: "English Literature – IV", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Political Science – IV", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Sociology – IV", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – IV", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – IV", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – IV", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Political Science – IV", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Sociology – IV", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – IV", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – IV", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
             {
                 id: "sem5",
                 name: "Semester 5",
                 subjects: [
-                    { name: "English Literature – V", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – V", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                     { name: "Political Science – V", coverImage: "https://m.media-amazon.com/images?q=tbn:ANd9GcQEQ8mOxgtu-OTBxP7Fy5sGOZA4EciSZt9uDA&s" },
-                    { name: "Sociology – V", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – V", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – V", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "Sociology – V", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – V", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – V", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
             {
                 id: "sem6",
                 name: "Semester 6",
                 subjects: [
-                    { name: "English Literature – VI", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Political Science – VI", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Sociology – VI", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "History – VI", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL._AC_UF1000,1000_QL80_.jpg" },
-                    { name: "Psychology – VI", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L._AC_UF1000,1000_QL80_.jpg" },
+                    { name: "English Literature – VI", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Political Science – VI", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Sociology – VI", coverImage: "https://m.media-amazon.com/images/I/81e-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
+                    { name: "History – VI", coverImage: "https://m.media-amazon.com/images/I/81c-d7G5BVL.AC_UF1000,1000_QL80.jpg" },
+                    { name: "Psychology – VI", coverImage: "https://m.media-amazon.com/images/I/81b-N8c-N-L.AC_UF1000,1000_QL80.jpg" },
                 ],
             },
         ],
@@ -342,5 +341,3 @@ export const departments: Department[] = [
     ],
   },
 ];
-
-    
