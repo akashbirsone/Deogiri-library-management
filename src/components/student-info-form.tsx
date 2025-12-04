@@ -33,7 +33,7 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
 const departments = {
-    "Faculty of Science & I.T.": ["B.Sc. CS", "B.Sc. IT", "BCA", "M.Sc. CS"],
+    "B.Sc IT / CS": ["B.Sc. CS", "B.Sc. IT", "BCA", "M.Sc. CS"],
     "Faculty of Commerce & Management": ["B.Com", "BBA", "MBA"],
     "Faculty of Arts & Social Science": ["BA", "MA", "B.Lib.I.Sc"],
 }
